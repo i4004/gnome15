@@ -391,8 +391,8 @@ class G15DaemonServer():
         self.load_configuration()                
         self.notify_handle = self.gconf_client.notify_add(self.gconf_key, self._config_changed);
         self.daemon = G15Daemon(self._get_port(), self)
-        self.async = G15Async()
-        self.async.start()
+        self.is_async = G15Async(1)
+        self.is_async.start()
     
     def deactivate(self):
         self._stop_all_clients()
@@ -424,8 +424,8 @@ class G15DaemonServer():
                 self._stop_all_clients()
                 self.daemon.close()
             self.daemon = G15Daemon(port, self)
-            self.async = G15Async()
-            self.async.start()
+            self.is_async = G15Async(1)
+            self.is_async.start()
         else:
             for c in self.clients:
                 if c.last_img_buffer is not None:

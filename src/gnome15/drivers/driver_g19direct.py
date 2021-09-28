@@ -205,7 +205,6 @@ class Driver(g15driver.AbstractDriver):
                 
         width = img.get_width()
         height = img.get_height()
-        
         # Create a new flipped, rotated image. The G19 expects the image to scan vertically, but
         # the cairo image surface will be horizontal. Rotating then flipping the image is the
         # quickest way to convert this. 16 bit color (5-6-5) is also required. Unfortunately this format
@@ -221,9 +220,8 @@ class Driver(g15driver.AbstractDriver):
         g15cairo.rotate_around_center(back_context, width, height, 270)
         g15cairo.flip_horizontal(back_context, width, height)
         back_context.set_source_surface(img, 0, 0)
-        back_context.set_operator (cairo.OPERATOR_SOURCE);
+        back_context.set_operator(cairo.OPERATOR_SOURCE)
         back_context.paint()
-        
         if back_surface.get_format() == cairo.FORMAT_ARGB32:
             file_str = StringIO()
             data = back_surface.get_data()
@@ -231,10 +229,10 @@ class Driver(g15driver.AbstractDriver):
                 r = ord(data[i + 2])
                 g = ord(data[i + 1])
                 b = ord(data[i + 0])
-                file_str.write(self._rgb_to_uint16(r, g, b))                
-            buf = array.array('B', file_str.getvalue())   
+                file_str.write(self._rgb_to_uint16(r, g, b))              
+            buf = array.array('B', b'file_str.getvalue()')   
         else:   
-            buf = array.array('B', str(back_surface.get_data()))   
+            buf = back_surface.get_data()
                   
         expected_size = MAX_X * MAX_Y * ( self.get_bpp() / 8 )
         if len(buf) != expected_size:
@@ -361,7 +359,7 @@ class Driver(g15driver.AbstractDriver):
         gBits = gBits if gBits <= 63 else 63
         bBits = bBits if bBits <= 31 else 31        
 
-        valueH = (rBits << 3) | (gBits >> 3)
-        valueL = (gBits << 5) | bBits
+        valueH = (int(rBits) << 3) | (int(gBits) >> 3)
+        valueL = (int(gBits) << 5) | int(bBits)
 
         return chr(valueL & 0xff) + chr(valueH & 0xff)

@@ -134,9 +134,9 @@ class G19(object):
         val = []
         try:
             val = list(self.__usbDevice.handleIf1.interruptRead(
-                0x83, maxLen, 10))
+                0x83, maxLen, 100))
         except usb.USBError as e:
-            if e.message != "Connection timed out":
+            if e != "Connection timed out":
                 logger.debug("Error reading g and m keys", exc_info = e)
             pass
         finally:
@@ -152,9 +152,9 @@ class G19(object):
         self.__usbDeviceMutex.acquire()
         val = []
         try:
-            val = list(self.__usbDevice.handleIf0.interruptRead(0x81, 2, 10))
+            val = list(self.__usbDevice.handleIf0.interruptRead(0x81, 2, 100))
         except usb.USBError as e:
-            if e.message != "Connection timed out":
+            if e != "Connection timed out":
                 logger.debug("Error reading display menu keys", exc_info = e)
             pass
         finally:
@@ -173,9 +173,9 @@ class G19(object):
         self.__usbDeviceMutex.acquire()
         val = []
         try:
-            val = list(self.__usbDevice.handleIfMM.interruptRead(0x82, 2, 10))
+            val = list(self.__usbDevice.handleIfMM.interruptRead(0x82, 2, 100))
         except usb.USBError as e:
-            if e.message != "Connection timed out":
+            if e != "Connection timed out":
                 logger.debug("Error reading multimedia keys", exc_info = e)
             pass
         finally:
@@ -223,7 +223,7 @@ class G19(object):
 
         self.__usbDeviceMutex.acquire()
         try:
-            self.__usbDevice.handleIf0.bulkWrite(2, frame, self.__write_timeout)
+            self.__usbDevice.handleIf0.bulkWrite(0x02, frame, self.__write_timeout)
         finally:
             self.__usbDeviceMutex.release()
 
@@ -342,7 +342,7 @@ class G19UsbController(object):
         
         config = self.__lcd_device.configurations[0]
         display_interface = config.interfaces[0][0]
-        
+                
         # This is to cope with a difference in pyusb 1.0 compatibility layer
         if len(config.interfaces) > 1:
             macro_and_backlight_interface = config.interfaces[1][0]
@@ -393,7 +393,7 @@ class G19UsbController(object):
                 
         
             config = self.__kbd_device.configurations[0]
-            ifacMM = config.interfaces[1][0]
+            ifacMM = config.interfaces[0][1]
         
             try:
                 self.handleIfMM.setConfiguration(1)

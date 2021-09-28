@@ -6,3 +6,4 @@
 
 # Logitech G19 Gaming Keyboard
 SUBSYSTEM=="usb", ACTION=="add", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c229", MODE="@DEVICEMODE@", GROUP="@DEVICEGROUP@"
+SUBSYSTEM=="usb", ACTION=="add", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c228", MODE="@DEVICEMODE@", GROUP="@DEVICEGROUP@"

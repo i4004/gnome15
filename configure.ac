@@ -1,6 +1,6 @@
 AC_INIT([gnome15], [0.11.0], [bugs@gnome15.org])
 AC_CONFIG_SRCDIR([src/gnome15/g15service.py])
-AM_INIT_AUTOMAKE([tar-ustar])
+AM_INIT_AUTOMAKE([tar-ustar foreign])
 AM_MAINTAINER_MODE
 
 AC_CONFIG_MACRO_DIR([m4])
@@ -199,9 +199,9 @@ AS_IF([test -z "${UDEV_RULES_PATH}"],
 AC_ARG_VAR(DEVICEGROUP, [Group that the devices will be owned by. Defaults to plugdev])
 AS_IF([test -z "${DEVICEGROUP}"],
 	AC_SUBST([DEVICEGROUP], [plugdev]))
-AC_ARG_VAR(DEVICEMODE, [Permissions of the devices. Defaults to 0660])
+AC_ARG_VAR(DEVICEMODE, [Permissions of the devices. Defaults to 0666])
 AS_IF([test -z "${DEVICEMODE}"],
-	AC_SUBST([DEVICEMODE], [0660]))
+	AC_SUBST([DEVICEMODE], [0666]))
 
 dnl Drivers
 AC_ARG_ENABLE([driver-kernel],
