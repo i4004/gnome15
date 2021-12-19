@@ -1,3 +1,10 @@
+STATUS OF THIS REPOSITORY
+=========================
+
+I don't have the keyboard anymore for some time now and stopped developing a version using python3 (see python 3 branch). The conversion itself was complete but
+there were still bugs to fix and things to do in order to make it work with wayland.
+
+
 STATUS OF GNOME15
 =================
 
