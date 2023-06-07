@@ -1,4 +1,4 @@
-AC_INIT([gnome15], [0.11.0], [bugs@gnome15.org])
+AC_INIT([gnome15],[0.11.0],[bugs@gnome15.org])
 AC_CONFIG_SRCDIR([src/gnome15/g15service.py])
 AM_INIT_AUTOMAKE([tar-ustar foreign])
 AM_MAINTAINER_MODE
@@ -19,8 +19,8 @@ LT_INIT()
 AC_PROG_CC
 
 dnl Python
-AM_PATH_PYTHON([3.6])
-AX_PYTHON_DEVEL([3.6])
+AM_PATH_PYTHON([3.11])
+AX_PYTHON_DEVEL([3.11])
 
 dnl versions of packages we require ...
 m4_define(pygobject_required_version,3.2.0)
@@ -36,7 +36,7 @@ AS_IF([test "x${HAVE_PYMOD_KEYRING}" = "xno"],
 
 AX_PYTHON_MODULE(virtkey, [])
 AS_IF([test "x${HAVE_PYMOD_VIRTKEY}" = "xno"],
-	[AC_MSG_ERROR([Requires Python Virtkey Library])])
+	[AC_MSG_ERROR([Requires Python virtkey Library])])
 
 AX_PYTHON_MODULE(PIL.Image, [])
 AS_IF([test "x${HAVE_PYMOD_PIL_IMAGE}" = "xno"],
@@ -894,7 +894,7 @@ AC_ARG_ENABLE([plugin-things],
 	[plugin_things=no])
 AM_CONDITIONAL([ENABLE_PLUGIN_THINGS], [test x$plugin_things = xyes])
 
-AC_OUTPUT([ 
+AC_CONFIG_FILES([ 
 Makefile
 data/Makefile
 data/applications/Makefile
@@ -1061,6 +1061,7 @@ src/plugins/lens/Makefile
 src/plugins/webkitbrowser/Makefile
 src/plugins/webkitbrowser/default/Makefile
 ])
+AC_OUTPUT
 
 AS_ECHO("Available features :-")
 AS_ECHO("")
