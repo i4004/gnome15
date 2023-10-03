@@ -205,7 +205,6 @@ def get_translation(domain, modfile=None):
     locale.bindtextdomain(domain, translation_location)
     gettext.bindtextdomain(domain, translation_location)
     gettext.textdomain (domain)
-    gettext.bind_textdomain_codeset(domain, "UTF-8")
     language = gettext.translation (domain, translation_location, languages=languages, fallback=True)
     __translations[domain] = language
     return language
