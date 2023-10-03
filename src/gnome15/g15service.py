@@ -1058,7 +1058,6 @@ class G15Service(g15desktop.G15AbstractService):
             import gi
             gi.require_version('Wnck','3.0')
             from gi.repository import Wnck
-            Wnck.__file__
             self._check_active_application_with_wnck()
         except Exception as e:
             logger.warning("Python Wnck not available either, no automatic profile switching", exc_info = e)
