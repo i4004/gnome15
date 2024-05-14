@@ -1030,10 +1030,10 @@ class G15Profile(object):
         if self.id != -1 or filename is not None or fd is not None:
             if ( isinstance(filename, str) or isinstance(filename, str) ) and os.path.exists(filename):
                 self.read_only = not os.stat(filename)[0] & stat.S_IWRITE
-                self.parser.readfp(codecs.open(filename, "r", "utf8"))
+                self.parser.read_file(codecs.open(filename, "r", "utf8"))
             elif fd is not None:
                 self.read_only = True
-                self.parser.readfp(fd)
+                self.parser.read_file(fd)
         else:
             self.read_only = False
         
