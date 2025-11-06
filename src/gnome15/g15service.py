@@ -746,10 +746,43 @@ class G15Service(g15desktop.G15AbstractService):
             logger.debug("Could not check active application", exc_info = e)
             pass
         
+    def _is_wayland(self):
+        """Check if running under Wayland"""
+        return os.environ.get('XDG_SESSION_TYPE', '').lower() == 'wayland' or \
+               os.environ.get('WAYLAND_DISPLAY') is not None
+    
+    def _check_active_application_with_wayland(self, event=None):
+        """Check active application under Wayland using GNOME Shell D-Bus interface"""
+        try:
+            import dbus
+            session_bus = dbus.SessionBus()
+            # Try GNOME Shell's window tracker
+            shell = session_bus.get_object('org.gnome.Shell', '/org/gnome/Shell')
+            shell_iface = dbus.Interface(shell, 'org.gnome.Shell')
+            
+            # Get list of windows
+            result = shell_iface.Eval('global.display.focus_window ? global.display.focus_window.get_wm_class() : ""')
+            if result[0]:  # success
+                active_application_name = result[1].strip('"')
+                if active_application_name and active_application_name != self.active_application_name:
+                    self.active_application_name = active_application_name
+                    self.active_window_title = active_application_name
+                    logger.info("Active application is now %s", self.active_application_name)
+                    for screen in self.screens:
+                        screen.set_active_application_name(active_application_name)
+        except Exception as e:
+            logger.debug("Failed to get active window via GNOME Shell D-Bus", exc_info = e)
+            
+        GObject.timeout_add(500, self._check_active_application_with_wayland)
+    
     def _check_active_application_with_wnck(self, event=None):
         try:
             from gi.repository import Wnck
-            window = Wnck.Screen.get_default().get_active_window()
+            screen = Wnck.Screen.get_default()
+            if screen is None:
+                logger.warning("Wnck.Screen.get_default() returned None - likely running under Wayland")
+                return False
+            window = screen.get_active_window()
             if window is not None and not window.is_skip_pager():
                 app = window.get_application()
                 active_application_name = app.get_name() if app is not None else ""
@@ -1054,13 +1087,22 @@ class G15Service(g15desktop.G15AbstractService):
 #        except Exception as e:
 #            logger.info("BAMF not available, falling back to polling WNCK.")
 #            logger.debug("BAMF attempt below :", exc_info = e)
-        try :                
-            import gi
-            gi.require_version('Wnck','3.0')
-            from gi.repository import Wnck
-            self._check_active_application_with_wnck()
-        except Exception as e:
-            logger.warning("Python Wnck not available either, no automatic profile switching", exc_info = e)
+        # Check if running under Wayland
+        if self._is_wayland():
+            logger.info("Wayland detected, using GNOME Shell D-Bus for window tracking")
+            try:
+                self._check_active_application_with_wayland()
+            except Exception as e:
+                logger.warning("Failed to initialize Wayland window tracking", exc_info = e)
+        else:
+            # X11 - use Wnck
+            try :                
+                import gi
+                gi.require_version('Wnck','3.0')
+                from gi.repository import Wnck
+                self._check_active_application_with_wnck()
+            except Exception as e:
+                logger.warning("Python Wnck not available, no automatic profile switching", exc_info = e)
            
     def _add_screen(self, device):
         try:
