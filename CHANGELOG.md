@@ -1,9 +1,7 @@
-## 1.0.0 (2017-06-18)
+# Changelog
 
-Bugfixes:
+## [0.12]
 
-  - `function --params` this is only for an example
+### Added
 
-Features:
-
-  - Add an not exist function (#commitid, @huskynarr)
+- Python 3.12 support
