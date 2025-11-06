@@ -53,7 +53,7 @@ def get_driver_mod(driver_id):
     Keyword arguments:
     driver_id    --    driver ID
     '''
-    for driver_mod in imported_drivers.values():
+    for driver_mod in list(imported_drivers.values()):
         if driver_mod.id == driver_id:
             return driver_mod
     

@@ -1,9 +1,12 @@
-AC_INIT([gnome15], [0.11.0], [bugs@gnome15.org])
+AC_INIT([gnome15],[0.11.0],[bugs@gnome15.org])
 AC_CONFIG_SRCDIR([src/gnome15/g15service.py])
-AM_INIT_AUTOMAKE([tar-ustar])
+AM_INIT_AUTOMAKE([tar-ustar foreign])
 AM_MAINTAINER_MODE
 
 AC_CONFIG_MACRO_DIR([m4])
+
+#Detect OS
+AC_CANONICAL_HOST
 
 dnl
 dnl Dependencies
@@ -16,11 +19,14 @@ LT_INIT()
 AC_PROG_CC
 
 dnl Python
-AM_PATH_PYTHON
-AX_PYTHON_DEVEL([2.6])
+AM_PATH_PYTHON([3.11])
+AX_PYTHON_DEVEL([3.11])
+
+dnl versions of packages we require ...
+m4_define(pygobject_required_version,3.2.0)
 
 dnl Python modules (mandatory)
-PKG_CHECK_MODULES(PYGTK, pygtk-2.0)
+PKG_CHECK_MODULES(PYGOBJECT, [pygobject-3.0 >= pygobject_required_version])
 AC_SUBST(PYGTK_CFLAGS)
 AC_SUBST(PYGTK_LIBS)
 
@@ -30,7 +36,7 @@ AS_IF([test "x${HAVE_PYMOD_KEYRING}" = "xno"],
 
 AX_PYTHON_MODULE(virtkey, [])
 AS_IF([test "x${HAVE_PYMOD_VIRTKEY}" = "xno"],
-	[AC_MSG_ERROR([Requires Python Virtkey Library])])
+	[AC_MSG_ERROR([Requires Python virtkey Library])])
 
 AX_PYTHON_MODULE(PIL.Image, [])
 AS_IF([test "x${HAVE_PYMOD_PIL_IMAGE}" = "xno"],
@@ -52,9 +58,10 @@ AX_PYTHON_MODULE(lxml, [])
 AS_IF([test "x${HAVE_PYMOD_LXML}" = "xno"],
 	[AC_MSG_ERROR([Requires LXML bindings for Python])])
 
-AX_PYTHON_MODULE(gobject, [])
+AX_PYTHON_GI_MODULE(GObject, [])
 AS_IF([test "x${HAVE_PYMOD_GOBJECT}" = "xno"],
-	[AC_MSG_ERROR([Requires GObject for Python])])
+        [AC_MSG_ERROR([Requires GObject for Python])])
+
 
 AX_PYTHON_MODULE(xdg, [])
 AS_IF([test "x${HAVE_PYMOD_XDG}" = "xno"],
@@ -64,17 +71,17 @@ AX_PYTHON_MODULE(usb, [])
 AS_IF([test "x${HAVE_PYMOD_USB}" = "xno"],
 	[AC_MSG_ERROR([Requires PyUSB, python bindings for libusb])])
 
-AX_PYTHON_MODULE(gconf, [])
+AX_PYTHON_GI_MODULE(GConf, [])
 AS_IF([test "x${HAVE_PYMOD_GCONF}" = "xno"],
-	[AC_MSG_ERROR([Requires GConf bindings for Python])])
+        [AC_MSG_ERROR([Requires GConf bindings for Python])])
 
-AX_PYTHON_MODULE(rsvg, [])
+AX_PYTHON_GI_MODULE(Rsvg, [])
 AS_IF([test "x${HAVE_PYMOD_RSVG}" = "xno"],
-	[AC_MSG_ERROR([Requires RSVG for Python])])
+        [AC_MSG_ERROR([Requires RSVG for Python])])
 
-AX_PYTHON_MODULE(pango, [])
+AX_PYTHON_GI_MODULE(Pango, [])
 AS_IF([test "x${HAVE_PYMOD_PANGO}" = "xno"],
-	[AC_MSG_ERROR([Requires Pango for Python])])
+        [AC_MSG_ERROR([Requires Pango for Python])])
 
 AX_PYTHON_MODULE(uinput, [])
 AS_IF([test "x${HAVE_PYMOD_UINPUT}" = "xno"],
@@ -82,7 +89,7 @@ AS_IF([test "x${HAVE_PYMOD_UINPUT}" = "xno"],
 
 AX_PYTHON_MODULE(Xlib, [])
 AS_IF([test "x${HAVE_PYMOD_XLIB}" = "xno"],
-	[AC_MSG_ERROR([Requires Python Xlib - Python Xlib bindings])])
+        [AC_MSG_ERROR([Requires Python Xlib - Python Xlib bindings])])
 
 dnl Python modules (optional)
 AX_PYTHON_MODULE(setproctitle, [])
@@ -100,12 +107,12 @@ AS_IF([test "x${HAVE_PYMOD_PYINPUTEVENT}" = "xyes"],
 	[have_pyinputevent=no])
 
 dnl Python modules (mandatory for some plugins)
-AX_PYTHON_MODULE(gst, [])
+AX_PYTHON_GI_MODULE(Gst, [])
 AS_IF([test "x${HAVE_PYMOD_GST}" = "xyes"],
-	[have_gst=yes],
-	[have_gst=no])
+        [have_gst=yes],
+        [have_gst=no])
 
-AX_PYTHON_MODULE(appindicator, [])
+AX_PYTHON_GI_MODULE(AppIndicator3, [])
 AS_IF([test "x${HAVE_PYMOD_APPINDICATOR}" = "xyes"],
 	[have_appindicator=yes],
 	[have_appindicator=no])
@@ -135,11 +142,13 @@ AS_IF([test "x${HAVE_PYMOD_GDATA_CALENDAR}" = "xyes" ],
 	[have_gdata_calendar=yes],
 	[have_gdata_calendar=no])
 
+# This shold be replaced with newer api
 AX_PYTHON_MODULE(gdata.analytics, [])
 AS_IF([test "x${HAVE_PYMOD_GDATA_ANALYTICS}" = "xyes" ],
 	[have_gdata_analytics=yes],
 	[have_gdata_analytics=no])
 
+#Need to port to python3
 AX_PYTHON_MODULE(cairoplot, [])
 AS_IF([test "x${HAVE_PYMOD_CAIROPLOT}" = "xyes" ],
 	[have_cairoplot=yes],
@@ -190,9 +199,9 @@ AS_IF([test -z "${UDEV_RULES_PATH}"],
 AC_ARG_VAR(DEVICEGROUP, [Group that the devices will be owned by. Defaults to plugdev])
 AS_IF([test -z "${DEVICEGROUP}"],
 	AC_SUBST([DEVICEGROUP], [plugdev]))
-AC_ARG_VAR(DEVICEMODE, [Permissions of the devices. Defaults to 0660])
+AC_ARG_VAR(DEVICEMODE, [Permissions of the devices. Defaults to 0666])
 AS_IF([test -z "${DEVICEMODE}"],
-	AC_SUBST([DEVICEMODE], [0660]))
+	AC_SUBST([DEVICEMODE], [0666]))
 
 dnl Drivers
 AC_ARG_ENABLE([driver-kernel],
@@ -372,20 +381,6 @@ AC_ARG_ENABLE([plugin-g15daemon-server],
 	esac],
 	[plugin_g15daemon_server=yes])
 AM_CONDITIONAL([ENABLE_PLUGIN_G15DAEMON_SERVER], [test x$plugin_g15daemon_server = xyes])
-
-dnl Instant Messenger plugin
-AC_ARG_ENABLE([plugin-im],
-	[AS_HELP_STRING([--enable-plugin-im],
-		[Enable Instant Messenger plugin. Displays current contact list and status (currently works with Telepathy framework based clients).])],
-	[case "${enableval}" in
-		yes) plugin_im=yes ;;
-		no)  plugin_im=no ;;
-		*)   AC_MSG_ERROR([bad value ${enableval} for --enable-plugin-im]) ;;
-	esac],
-	[plugin_im=${have_telepathy}])
-AS_IF([test "x${plugin_im}" = "xyes" -a "x$have_telepathy" = "xno"],
-	[AC_MSG_ERROR([Plugin Instant Messenger cannot be built without telepathy python module])])
-AM_CONDITIONAL([ENABLE_PLUGIN_IM], [test x$plugin_im = xyes])
 
 dnl Macro Recorder plugin
 AC_ARG_ENABLE([plugin-macro-recorder],
@@ -668,44 +663,6 @@ AS_IF([test "x${plugin_cal_evolution}" = "xyes" -a "x$have_vobject" = "xno"],
 	[AC_MSG_ERROR([Plugin Evolution calendar cannot be built without vobject python module])])
 AM_CONDITIONAL([ENABLE_PLUGIN_CAL_EVOLUTION], [test x$plugin_cal_evolution = xyes])
 
-dnl Google Calendar plugin
-AS_IF([test "x${plugin_cal}" = "xyes" -a "x${have_gdata_calendar}" = "xyes" ],
-	  [deps_plugin_cal_google=yes],
-	  [deps_plugin_cal_google=no])
-AC_ARG_ENABLE([plugin-cal-google],
-	[AS_HELP_STRING([--enable-plugin-cal-google],
-		[Enable Google calendar plugin. Requires calendar plugin, python gdata])],
-	[case "${enableval}" in
-		yes) plugin_cal_google=yes ;;
-		no)  plugin_cal_google=no ;;
-		*)   AC_MSG_ERROR([bad value ${enableval} for --enable-plugin-cal-google]) ;;
-	esac],
-	[plugin_cal_google=${deps_plugin_cal_google}])
-AS_IF([test "x${plugin_cal_google}" = "xyes" -a "x$plugin_cal" = "xno"],
-	[AC_MSG_ERROR([Plugin Google calendar cannot be built without Calendar plugin])])
-AS_IF([test "x${plugin_cal_google}" = "xyes" -a "x$have_gdata_calendar" = "xno"],
-	[AC_MSG_ERROR([Plugin Google calendar cannot be built without gdata python modules])])
-AM_CONDITIONAL([ENABLE_PLUGIN_CAL_GOOGLE], [test x$plugin_cal_google = xyes])
-
-dnl Google Analytics plugin
-AS_IF([test "x${have_gdata_analytics}" = "xyes" -a "x${have_cairoplot}" = "xyes" ],
-	  [deps_plugin_google_analytics=yes],
-	  [deps_plugin_google_analytics=no])
-AC_ARG_ENABLE([plugin-google-analytics],
-	[AS_HELP_STRING([--enable-plugin-google-analytics],
-		[Enable Google Analytics plugin. Requires python gdata and cairoplot])],
-	[case "${enableval}" in
-		yes) plugin_google_analytics=yes ;;
-		no)  plugin_google_analytics=no ;;
-		*)   AC_MSG_ERROR([bad value ${enableval} for --enable-plugin-google-analytics]) ;;
-	esac],
-	[plugin_google_analytics=${deps_plugin_google_analytics}])
-AS_IF([test "x${plugin_google_analytics}" = "xyes" -a "x$have_gdata_analytics" = "xno"],
-	[AC_MSG_ERROR([Plugin Google analytics cannot be built without gdata python modules])])
-AS_IF([test "x${plugin_google_analytics}" = "xyes" -a "x$have_cairoplot" = "xno"],
-	[AC_MSG_ERROR([Plugin Google analytics cannot be built without cairoplot python modules])])
-AM_CONDITIONAL([ENABLE_PLUGIN_GOOGLE_ANALYTICS], [test x$plugin_google_analytics = xyes])
-
 dnl POP3/IMAP Email Checker plugin
 AC_ARG_ENABLE([plugin-lcdbiff],
 	[AS_HELP_STRING([--enable-plugin-lcdbiff],
@@ -889,18 +846,6 @@ AC_ARG_ENABLE([plugin-notify-lcd2],
 	[plugin_notify_lcd2=no])
 AM_CONDITIONAL([ENABLE_PLUGIN_NOTIFY_LCD2], [test x$plugin_notify_lcd2 = xyes])
 
-dnl PPAStats plugin
-AC_ARG_ENABLE([plugin-ppastats],
-	[AS_HELP_STRING([--enable-plugin-ppastats],
-		[Enable PPAStats plugin.])],
-	[case "${enableval}" in
-		yes) plugin_ppastats=yes ;;
-		no)  plugin_ppastats=no ;;
-		*)   AC_MSG_ERROR([bad value ${enableval} for --enable-plugin-ppastats]) ;;
-	esac],
-	[plugin_ppastats=no])
-AM_CONDITIONAL([ENABLE_PLUGIN_PPASTATS], [test x$plugin_ppastats = xyes])
-
 dnl NM plugin
 AC_ARG_ENABLE([plugin-nm],
 	[AS_HELP_STRING([--enable-plugin-nm],
@@ -949,7 +894,7 @@ AC_ARG_ENABLE([plugin-things],
 	[plugin_things=no])
 AM_CONDITIONAL([ENABLE_PLUGIN_THINGS], [test x$plugin_things = xyes])
 
-AC_OUTPUT([ 
+AC_CONFIG_FILES([ 
 Makefile
 data/Makefile
 data/applications/Makefile
@@ -1030,7 +975,6 @@ src/plugins/Makefile
 src/plugins/cal/Makefile
 src/plugins/cal/default/Makefile
 src/plugins/cal-evolution/Makefile
-src/plugins/cal-google/Makefile
 src/plugins/lcdbiff/Makefile
 src/plugins/lcdbiff/default/Makefile
 src/plugins/debug/Makefile
@@ -1062,7 +1006,6 @@ src/plugins/pommodoro/Makefile
 src/plugins/pommodoro/default/Makefile
 src/plugins/profiles/Makefile
 src/plugins/processes/Makefile
-src/plugins/im/Makefile
 src/plugins/indicator-messages/Makefile
 src/plugins/lcdshot/Makefile
 src/plugins/notify-lcd/Makefile
@@ -1097,8 +1040,6 @@ src/plugins/voip/Makefile
 src/plugins/voip/default/Makefile
 src/plugins/voip-teamspeak3/Makefile
 src/plugins/voip-teamspeak3/ts3/Makefile
-src/plugins/google-analytics/Makefile
-src/plugins/google-analytics/default/Makefile
 src/plugins/trafficstats/Makefile
 src/plugins/trafficstats/default/Makefile
 src/plugins/impulse15/Makefile
@@ -1114,17 +1055,13 @@ src/plugins/backlight/Makefile
 src/plugins/backlight/default/Makefile
 src/plugins/notify-lcd2/Makefile
 src/plugins/notify-lcd2/default/Makefile
-src/plugins/ppastats/Makefile
-src/plugins/ppastats/default/Makefile
 src/plugins/nm/Makefile
 src/plugins/nm/default/Makefile
 src/plugins/lens/Makefile
 src/plugins/webkitbrowser/Makefile
 src/plugins/webkitbrowser/default/Makefile
-src/plugins/things/Makefile
-src/plugins/things/cg.stuff/Makefile
-src/plugins/things/clouds.stuff/Makefile
 ])
+AC_OUTPUT
 
 AS_ECHO("Available features :-")
 AS_ECHO("")
@@ -1199,10 +1136,6 @@ AS_ECHO_N("cal-evolution               - ")
 AS_IF([test "x$plugin_cal_evolution" = "xyes" ],
      [AS_ECHO("Enabled")],
      [AS_ECHO("Disabled")])
-AS_ECHO_N("cal-google                  - ")
-AS_IF([test "x$plugin_cal_google" = "xyes" ],
-     [AS_ECHO("Enabled")],
-     [AS_ECHO("Disabled")])
 AS_ECHO_N("lcdbiff                     - ")
 AS_IF([test "x$plugin_lcdbiff" = "xyes" ],
      [AS_ECHO("Enabled")],
@@ -1225,10 +1158,6 @@ AS_IF([test "x$plugin_fx" = "xyes" ],
      [AS_ECHO("Disabled")])
 AS_ECHO_N("g15daemon-server            - ")
 AS_IF([test "x$plugin_g15daemon_server" = "xyes" ],
-     [AS_ECHO("Enabled")],
-     [AS_ECHO("Disabled")])
-AS_ECHO_N("im                          - ")
-AS_IF([test "x$plugin_im" = "xyes" ],
      [AS_ECHO("Enabled")],
      [AS_ECHO("Disabled")])
 AS_ECHO_N("indicator-messages          - ")
@@ -1319,10 +1248,6 @@ AS_ECHO_N("voip-teamspeak3             - ")
 AS_IF([test "x$plugin_voip_teamspeak3" = "xyes" ],
      [AS_ECHO("Enabled")],
      [AS_ECHO("Disabled")])
-AS_ECHO_N("google-analytics            - ")
-AS_IF([test "x$plugin_google_analytics" = "xyes" ],
-     [AS_ECHO("Enabled")],
-     [AS_ECHO("Disabled")])
 AS_ECHO_N("debug                       - ")
 AS_IF([test "x$plugin_debug" = "xyes" ],
      [AS_ECHO("Enabled")],
@@ -1347,10 +1272,6 @@ AS_ECHO_N("notify-lcd2                 - ")
 AS_IF([test "x$plugin_notify_lcd2" = "xyes" ],
      [AS_ECHO("Enabled")],
      [AS_ECHO("Disabled")])
-AS_ECHO_N("ppastats                    - ")
-AS_IF([test "x$plugin_ppastats" = "xyes" ],
-     [AS_ECHO("Enabled")],
-     [AS_ECHO("Disabled")])
 AS_ECHO_N("nm                          - ")
 AS_IF([test "x$plugin_nm" = "xyes" ],
      [AS_ECHO("Enabled")],
@@ -1361,10 +1282,6 @@ AS_IF([test "x$plugin_lens" = "xyes" ],
      [AS_ECHO("Disabled")])
 AS_ECHO_N("webkitbrowser               - ")
 AS_IF([test "x$plugin_webkit_browser" = "xyes" ],
-     [AS_ECHO("Enabled")],
-     [AS_ECHO("Disabled")])
-AS_ECHO_N("things                      - ")
-AS_IF([test "x$plugin_things" = "xyes" ],
      [AS_ECHO("Enabled")],
      [AS_ECHO("Disabled")])
 AS_ECHO_N("impulse15                   - ")

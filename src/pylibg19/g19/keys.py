@@ -35,7 +35,7 @@ class Key(object):
     G09, \
     G10, \
     G11, \
-    G12 = range(17)
+    G12 = list(range(17))
 
     # special keys at display
     BACK, \
@@ -45,7 +45,7 @@ class Key(object):
     OK, \
     RIGHT, \
     SETTINGS, \
-    UP = range(G12 + 1, G12 + 9)
+    UP = list(range(G12 + 1, G12 + 9))
 
     # multimedia keys
     WINKEY_SWITCH, \
@@ -55,7 +55,7 @@ class Key(object):
     PLAY, \
     MUTE, \
     SCROLL_UP, \
-    SCROLL_DOWN = range(UP + 1, UP + 9)
+    SCROLL_DOWN = list(range(UP + 1, UP + 9))
     
     displayKeys = set([
         BACK,

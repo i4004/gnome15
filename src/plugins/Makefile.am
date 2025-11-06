@@ -16,9 +16,6 @@ endif
 if ENABLE_PLUGIN_CAL_EVOLUTION
     MAYBE_CAL_EVOLUTION = cal-evolution
 endif
-if ENABLE_PLUGIN_CAL_GOOGLE
-    MAYBE_CAL_GOOGLE = cal-google
-endif
 if ENABLE_PLUGIN_LCDBIFF
     MAYBE_LCDBIFF = lcdbiff
 endif
@@ -48,9 +45,6 @@ if ENABLE_PLUGIN_MOUNTS
 endif
 if ENABLE_PLUGIN_NOTIFY_LCD
     MAYBE_NOTIFY_LCD = notify-lcd
-endif
-if ENABLE_PLUGIN_IM
-    MAYBE_IM = im
 endif
 if ENABLE_PLUGIN_WEATHER
     MAYBE_WEATHER = weather
@@ -106,9 +100,6 @@ endif
 if ENABLE_PLUGIN_VOIP_TEAMSPEAK3
     MAYBE_VOIP_TEAMSPEAK3 = voip-teamspeak3
 endif
-if ENABLE_PLUGIN_GOOGLE_ANALYTICS
-    MAYBE_GOOGLE_ANALYTICS = google-analytics
-endif
 if ENABLE_PLUGIN_DEBUG
     MAYBE_DEBUG = debug
 endif
@@ -127,9 +118,6 @@ endif
 if ENABLE_PLUGIN_NOTIFY_LCD2
     MAYBE_NOTIFY_LCD2 = notify-lcd2
 endif
-if ENABLE_PLUGIN_PPASTATS
-    MAYBE_PPASTATS = ppastats
-endif
 if ENABLE_PLUGIN_NM
     MAYBE_NM = nm
 endif
@@ -139,25 +127,22 @@ endif
 if ENABLE_PLUGIN_WEBKIT_BROWSER
     MAYBE_WEBKIT_BROWSER = webkitbrowser
 endif
-if ENABLE_PLUGIN_THINGS
-    MAYBE_THINGS = things
-endif
 if ENABLE_PLUGIN_IMPULSE15
     MAYBE_IMPULSE15 = impulse15
 endif
 
 
 SUBDIRS = $(MAYBE_BACKGROUND) $(MAYBE_CAIRO_CLOCK) $(MAYBE_CLOCK) $(MAYBE_FX) $(MAYBE_MACRO_RECORDER) $(MAYBE_MACROS) $(MAYBE_MOUNTS) \
-	$(MAYBE_NOTIFY_LCD) $(MAYBE_IM) $(MAYBE_WEATHER) $(MAYBE_MPRIS) $(MAYBE_MENU) $(MAYBE_PANEL) $(MAYBE_MEDIAPLAYER) $(MAYBE_G15DAEMON_SERVER) \
+	$(MAYBE_NOTIFY_LCD) $(MAYBE_WEATHER) $(MAYBE_MPRIS) $(MAYBE_MENU) $(MAYBE_PANEL) $(MAYBE_MEDIAPLAYER) $(MAYBE_G15DAEMON_SERVER) \
 	$(MAYBE_STOPWATCH) $(MAYBE_SCREENSAVER) $(MAYBE_INDICATOR_MESSAGES) $(MAYBE_PROFILES) \
-	$(MAYBE_SYSMON) $(MAYBE_VOLUME) $(MAYBE_RSS) $(MAYBE_PROCESSES) $(MAYBE_CAL) $(MAYBE_CAL_EVOLUTION) $(MAYBE_CAL_GOOGLE) $(MAYBE_LCDBIFF) $(MAYBE_SENSE) \
+	$(MAYBE_SYSMON) $(MAYBE_VOLUME) $(MAYBE_RSS) $(MAYBE_PROCESSES) $(MAYBE_CAL) $(MAYBE_CAL_EVOLUTION) $(MAYBE_LCDBIFF) $(MAYBE_SENSE) \
 	$(MAYBE_LCDSHOT) $(MAYBE_TWEAK) $(MAYBE_TAILS) $(MAYBE_DISPLAY) $(MAYBE_VOIP) $(MAYBE_VOIP_TEAMSPEAK3) $(MAYBE_WEATHER_NOAA) \
-	$(MAYBE_WEATHER_YAHOO) $(MAYBE_GOOGLE_ANALYTICS) $(MAYBE_DEBUG) $(MAYBE_TRAFFIC_STATS) $(MAYBE_POMMODORO) $(MAYBE_GAME_NEXUIZ) \
-	$(MAYBE_BACKLIGHT) $(MAYBE_NOTIFY_LCD2) $(MAYBE_PPASTATS) $(MAYBE_NM) $(MAYBE_LENS) \
-	$(MAYBE_WEBKIT_BROWSER) $(MAYBE_THINGS) $(MAYBE_IMPULSE15)
+	$(MAYBE_WEATHER_YAHOO) $(MAYBE_DEBUG) $(MAYBE_TRAFFIC_STATS) $(MAYBE_POMMODORO) $(MAYBE_GAME_NEXUIZ) \
+	$(MAYBE_BACKLIGHT) $(MAYBE_NOTIFY_LCD2) $(MAYBE_NM) $(MAYBE_LENS) \
+	$(MAYBE_WEBKIT_BROWSER) $(MAYBE_IMPULSE15)
 	
-DIST_SUBDIRS = background cairo-clock clock fx macro-recorder macros mounts notify-lcd im weather mpris menu panel mediaplayer g15daemon-server stopwatch \
-	profiles sysmon volume rss processes screensaver cal cal-evolution cal-google lcdbiff indicator-messages sense lcdshot tweak tails display \
-	voip voip-teamspeak3 google-analytics weather-noaa weather-yahoo debug trafficstats pommodoro \
-	game-nexuiz backlight notify-lcd2 ppastats nm lens webkitbrowser things impulse15
+DIST_SUBDIRS = background cairo-clock clock fx macro-recorder macros mounts notify-lcd weather mpris menu panel mediaplayer g15daemon-server stopwatch \
+	profiles sysmon volume rss processes screensaver cal cal-evolution lcdbiff indicator-messages sense lcdshot tweak tails display \
+	voip voip-teamspeak3 weather-noaa weather-yahoo debug trafficstats pommodoro \
+	game-nexuiz backlight notify-lcd2 nm lens webkitbrowser impulse15
 

@@ -23,15 +23,16 @@ deals with all the hard work of connecting to DBus and monitoring events.
 """
 
 import gnome15.g15locale as g15locale
-_ = g15locale.get_translation("gnome15").ugettext
+_ = g15locale.get_translation("gnome15").gettext
 
 import sys
-import pygtk
-pygtk.require('2.0')
-import gtk
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk
+from gi.repository import GConf
+from gi.repository import GObject
+from gi.repository import GLib
 import subprocess
-import gconf
-import gobject
 import shutil
 import gnome15.g15globals as g15globals
 import gnome15.g15screen as g15screen
@@ -53,7 +54,7 @@ logger = logging.getLogger(__name__)
 from threading import RLock
 from threading import Thread
                 
-icon_theme = gtk.icon_theme_get_default()
+icon_theme = Gtk.IconTheme.get_default()
 if g15globals.dev:
     icon_theme.prepend_search_path(g15globals.icons_dir)
 
@@ -915,7 +916,7 @@ def browse(url):
     Keyword arguments:
     url        -- URL
     """
-    b = g15gconf.get_string_or_default(gconf.client_get_default(), \
+    b = g15gconf.get_string_or_default(GConf.Client.get_default(), \
                                       "/apps/gnome15/browser", "default")
     if not b in __browsers and not b == "default":
         logger.warning("Could not find browser %s, falling back to default", b)
@@ -962,7 +963,7 @@ class G15AbstractService(Thread):
         # Start this thread, which runs the gobject loop. This is 
         # run first, and in a thread, as starting the Gnome15 will send
         # DBUS events (which are sent on the loop). 
-        self.loop = gobject.MainLoop()
+        self.loop = GLib.MainLoop()
         self.start()
         
     def start_loop(self):
@@ -983,7 +984,7 @@ class G15AbstractService(Thread):
         self.start_service()
                 
     
-class G15Screen():
+class G15Screen_deleteme():
     """
     Client side representation of a remote screen. Holds general details such
     as model name, UID and the pages that screen is currently showing.
@@ -1014,11 +1015,11 @@ class G15DesktopComponent():
         self.connected = False
         
         # Connect to DBus and GConf
-        self.conf_client = gconf.client_get_default()
+        self.conf_client = GConf.Client.get_default()
         self.session_bus = dbus.SessionBus()
 
         # Enable monitoring of Gnome15 GConf settings
-        self.conf_client.add_dir("/apps/gnome15", gconf.CLIENT_PRELOAD_NONE)
+        self.conf_client.add_dir("/apps/gnome15", GConf.ClientPreloadType.PRELOAD_NONE)
         
         # Initialise desktop component
         self.initialise_desktop_component()     
@@ -1040,7 +1041,7 @@ class G15DesktopComponent():
         
         # Start watching various events
         self.conf_client.notify_add("/apps/gnome15/indicate_only_on_error", self._indicator_options_changed)
-        gtk_icon_theme = gtk.icon_theme_get_default()
+        gtk_icon_theme = Gtk.IconTheme.get_default()
         gtk_icon_theme.connect("changed", self._theme_changed)
 
         # Watch for Gnome15 starting and stopping
@@ -1223,11 +1224,11 @@ class G15DesktopComponent():
     def _disable(self, widget, device):
         device.Disable()
         
-    def _cycle_screens_option_changed(self, client, connection_id, entry, args):
+    def _cycle_screens_option_changed(self, client, connection_id, entry, *args):
         self.rebuild_desktop_component()
         
     def _remove_screen(self, screen_path):
-        print "*** removing %s from %s" % ( str(screen_path), str(self.screens))
+        print("*** removing %s from %s" % ( str(screen_path), str(self.screens)))
         if screen_path in self.screens:
             try :
                 del self.screens[screen_path]
@@ -1320,7 +1321,7 @@ class G15DesktopComponent():
             items[page_path] = page.GetTitle()
             self.rebuild_desktop_component()
         
-    def _indicator_options_changed(self, client, connection_id, entry, args):
+    def _indicator_options_changed(self, client, connection_id, entry, *args):
         self.options_changed()
     
     def _theme_changed(self, theme):
@@ -1336,13 +1337,13 @@ class G15GtkMenuPanelComponent(G15DesktopComponent):
         G15DesktopComponent.__init__(self)
         
     def about_info(self, widget):     
-        about = gtk.AboutDialog()
+        about = Gtk.AboutDialog()
         about.set_name("Gnome15")
         about.set_version(g15globals.version)
         about.set_license(GPL)
         about.set_authors(AUTHORS)
         about.set_documenters(["Brett Smith <tanktarta@blueyonder.co.uk>"])
-        about.set_logo(gtk.gdk.pixbuf_new_from_file(g15icontools.get_app_icon(self.conf_client, "gnome15", 128)))
+        about.set_logo(GdkPixbuf.Pixbuf.new_from_file(g15icontools.get_app_icon(self.conf_client, "gnome15", 128)))
         about.set_comments(_("Desktop integration for Logitech 'G' keyboards."))
         about.run()
         about.hide()
@@ -1350,12 +1351,12 @@ class G15GtkMenuPanelComponent(G15DesktopComponent):
     def scroll_event(self, widget, event):
         
         direction = event.direction
-        if direction == gtk.gdk.SCROLL_UP:
+        if direction == Gdk.ScrollDirection.UP:
             screen = self._get_active_screen_object()
             self._close_notify_message()
             screen.ClearPopup() 
             screen.Cycle(1)
-        elif direction == gtk.gdk.SCROLL_DOWN:
+        elif direction == Gdk.ScrollDirection.DOWN:
             screen = self._get_active_screen_object()
             self._close_notify_message()
             screen.ClearPopup() 
@@ -1366,9 +1367,9 @@ class G15GtkMenuPanelComponent(G15DesktopComponent):
             otherwise toggle between the devices (used to select what to scroll with up
             and down) 
             """
-            if direction == gtk.gdk.SCROLL_LEFT:
+            if direction == Gdk.ScrollDirection.LEFT:
                 self._get_active_screen_object().CycleKeyboard(-1)
-            elif direction == gtk.gdk.SCROLL_RIGHT:
+            elif direction == Gdk.ScrollDirection.RIGHT:
                 if len(self.screens) > 1:
                     if self.screen_number >= len(self.screens) - 1:
                         self.screen_number = 0
@@ -1397,10 +1398,10 @@ class G15GtkMenuPanelComponent(G15DesktopComponent):
         logger.debug("Building new menu")
         if self.service and self.connected:
             
-            item = gtk.MenuItem(_("Stop Desktop Service"))
+            item = Gtk.MenuItem(_("Stop Desktop Service"))
             item.connect("activate", self.stop_desktop_service)
             self.add_service_item(item)
-            self.add_service_item(gtk.MenuItem())
+            self.add_service_item(Gtk.MenuItem())
         
             try:
                 devices = self.service.GetDevices()
@@ -1413,15 +1414,15 @@ class G15GtkMenuPanelComponent(G15DesktopComponent):
                     if screen:
                         if i > 0:
                             logger.debug("Adding separator")
-                            self._append_item(gtk.MenuItem())
+                            self._append_item(Gtk.MenuItem())
                         # Disable
                         if len(devices) > 1:
-                            item = gtk.MenuItem("Disable %s"  % screen.device_model_fullname)
+                            item = Gtk.MenuItem("Disable %s"  % screen.device_model_fullname)
                             item.connect("activate", self._disable, remote_device)
                             self.add_service_item(item)
                         
                         # Cycle screens
-                        item = gtk.CheckMenuItem(_("Cycle screens automatically"))
+                        item = Gtk.CheckMenuItem(_("Cycle screens automatically"))
                         item.set_active(g15gconf.get_bool_or_default(self.conf_client, "/apps/gnome15/%s/cycle_screens" % screen.device_uid, True))
                         self.notify_handles.append(self.conf_client.notify_add("/apps/gnome15/%s/cycle_screens" % screen.device_uid, self._cycle_screens_option_changed))
                         item.connect("toggled", self._cycle_screens_changed, screen.device_uid)
@@ -1429,21 +1430,21 @@ class G15GtkMenuPanelComponent(G15DesktopComponent):
                         
                         # Alert message            
                         if screen.message:
-                            self._append_item(gtk.MenuItem(screen.message))
+                            self._append_item(Gtk.MenuItem(screen.message))
                         
                         logger.debug("Adding items")
                         
                         
-                        sorted_x = sorted(screen.items.iteritems(), key=operator.itemgetter(1))
+                        sorted_x = sorted(iter(screen.items.items()), key=operator.itemgetter(1))
                         for item_key, text in sorted_x:
                             logger.debug("Adding item %s = %s ", item_key, text)
-                            item = gtk.MenuItem(text)
+                            item = Gtk.MenuItem(text)
                             item.connect("activate", self._show_page, item_key)
                             self._append_item(item)
                     else:
                         # Enable
                         if len(devices) > 1:
-                            item = gtk.MenuItem(_("Enable %s") % remote_device.GetModelFullName())
+                            item = Gtk.MenuItem(_("Enable %s") % remote_device.GetModelFullName())
                             item.connect("activate", self._enable, remote_device)
                             self.add_service_item(item)
                     i += 1
@@ -1461,7 +1462,7 @@ class G15GtkMenuPanelComponent(G15DesktopComponent):
         self.check_attention()
         
     def add_start_desktop_service(self):
-        item = gtk.MenuItem(_("Start Desktop Service"))
+        item = Gtk.MenuItem(_("Start Desktop Service"))
         item.connect("activate", self.start_desktop_service)
         self.add_service_item(item)
         
@@ -1476,7 +1477,7 @@ class G15GtkMenuPanelComponent(G15DesktopComponent):
         self.notify_handles = []
         
         # Indicator menu
-        self.menu = gtk.Menu()
+        self.menu = Gtk.Menu()
         self.create_component()
         self.menu.show_all()
         
@@ -1528,13 +1529,13 @@ class G15GtkMenuPanelComponent(G15DesktopComponent):
         self.conf_client.set_bool("/apps/gnome15/%s/cycle_screens" % device_uid, widget.get_active())
         
 if __name__ == "__main__":
-    print "g15-systemtray installed = %s, enabled = %s" % ( is_desktop_application_installed("g15-systemtray"), is_autostart_application("g15-systemtray") )
-    print "g15-desktop-service installed = %s, enabled = %s" % ( is_desktop_application_installed("g15-desktop-service"), is_autostart_application("g15-desktop-service") )
-    print "g15-indicator installed = %s, enabled = %s" % ( is_desktop_application_installed("g15-indicator"), is_autostart_application("g15-indicator") )
-    print "dropbox installed = %s, enabled = %s" % ( is_desktop_application_installed("dropbox"), is_autostart_application("dropbox") )
-    print "xdropbox installed = %s, enabled = %s" % ( is_desktop_application_installed("xdropbox"), is_autostart_application("xdropbox") )
-    print "nepomukserver installed = %s, enabled = %s" % ( is_desktop_application_installed("nepomukserver"), is_autostart_application("nepomukserver") )
+    print("g15-systemtray installed = %s, enabled = %s" % ( is_desktop_application_installed("g15-systemtray"), is_autostart_application("g15-systemtray") ))
+    print("g15-desktop-service installed = %s, enabled = %s" % ( is_desktop_application_installed("g15-desktop-service"), is_autostart_application("g15-desktop-service") ))
+    print("g15-indicator installed = %s, enabled = %s" % ( is_desktop_application_installed("g15-indicator"), is_autostart_application("g15-indicator") ))
+    print("dropbox installed = %s, enabled = %s" % ( is_desktop_application_installed("dropbox"), is_autostart_application("dropbox") ))
+    print("xdropbox installed = %s, enabled = %s" % ( is_desktop_application_installed("xdropbox"), is_autostart_application("xdropbox") ))
+    print("nepomukserver installed = %s, enabled = %s" % ( is_desktop_application_installed("nepomukserver"), is_autostart_application("nepomukserver") ))
     set_autostart_application("g15-indicator", False)
-    print "g15-indicator installed = %s, enabled = %s" % ( is_desktop_application_installed("g15-indicator"), is_autostart_application("g15-indicator") )
+    print("g15-indicator installed = %s, enabled = %s" % ( is_desktop_application_installed("g15-indicator"), is_autostart_application("g15-indicator") ))
     set_autostart_application("g15-indicator", True)
-    print "g15-indicator installed = %s, enabled = %s" % ( is_desktop_application_installed("g15-indicator"), is_autostart_application("g15-indicator") )
+    print("g15-indicator installed = %s, enabled = %s" % ( is_desktop_application_installed("g15-indicator"), is_autostart_application("g15-indicator") ))

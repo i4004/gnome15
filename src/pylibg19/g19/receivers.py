@@ -14,8 +14,8 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from keys import (Data, Key)
-from runnable import Runnable
+from .keys import (Data, Key)
+from .runnable import Runnable
 
 import threading
 import time
@@ -74,7 +74,7 @@ class State(object):
         keys = []
         while curVal != empty:
             foundAKey = False
-            for val in Data.gmKeys.keys():
+            for val in list(Data.gmKeys.keys()):
                 if val & curVal == val:
                     curVal ^= val
                     keys.append(Data.gmKeys[val])
@@ -99,7 +99,7 @@ class State(object):
         '''
         if curVal != 0:
             foundAKey = False
-            for val in Data.displayKeys.keys():
+            for val in list(Data.displayKeys.keys()):
                 if val & curVal == val:
                     curVal ^= val
                     keys.append(Data.displayKeys[val])
@@ -121,7 +121,7 @@ class State(object):
             keys = []
             while curVal:
                 foundAKey = False
-                for val in Data.mmKeys.keys():
+                for val in list(Data.mmKeys.keys()):
                     if val & curVal == val:
                         curVal ^= val
                         keys.append(Data.mmKeys[val])

@@ -13,16 +13,19 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+import gi
+gi.require_version('Gtk','3.0')
+from gi.repository import Gtk
+from gi.repository import GObject
  
-import gnome15.g15screen as g15screen  
-import gnome15.util.g15scheduler as g15scheduler
-import gnome15.util.g15uigconf as g15uigconf
-import gnome15.util.g15gconf as g15gconf
-import gnome15.util.g15os as g15os
-import gnome15.g15driver as g15driver
-import gnome15.g15theme as g15theme
-import gobject
-import gtk
+from gnome15 import g15screen
+from gnome15.util import g15scheduler
+from gnome15.util import g15uigconf
+from gnome15.util import g15gconf
+from gnome15.util import g15os
+from gnome15 import g15driver
+from gnome15 import g15theme
 import os
 import sys
 import datetime
@@ -57,7 +60,7 @@ def create(gconf_key, gconf_client, screen):
     return G15Impulse(gconf_key, gconf_client, screen) 
 
 def show_preferences(parent, driver, gconf_client, gconf_key):
-    widget_tree = gtk.Builder()
+    widget_tree = Gtk.Builder()
     widget_tree.add_from_file(os.path.join(os.path.dirname(__file__), "impulse15.ui"))
     
     dialog = widget_tree.get_object("ImpulseDialog")
@@ -305,7 +308,7 @@ class G15Impulse():
                 next_tick = 1.0
             self.timer = g15scheduler.queue("impulseQueue", "ImpulseRedraw", next_tick, self.redraw)
         
-    def _config_changed(self, client, connection_id, entry, args):
+    def _config_changed(self, client, connection_id, entry, *args):
         if self.config_change_timer is not None:
             self.config_change_timer.cancel()
         self.config_change_timer = g15scheduler.schedule("ConfigReload", 1, self._do_config_changed)
@@ -332,7 +335,7 @@ class G15Impulse():
     def _load_config(self):
         logger.info("Reloading configuration")
         self.audio_source_index = get_source_index(self.gconf_client.get_string(self.gconf_key + "/audio_source_name"))
-        gobject.idle_add(self.set_audio_source)
+        GObject.idle_add(self.set_audio_source)
         self.mode = self.gconf_client.get_string(self.gconf_key + "/mode")
         self.disco = g15gconf.get_bool_or_default(self.gconf_client, self.gconf_key + "/disco", False)
         self.refresh_interval = 1.0 / g15gconf.get_float_or_default(self.gconf_client, self.gconf_key + "/frame_rate", 25.0)

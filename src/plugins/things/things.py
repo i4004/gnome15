@@ -14,10 +14,10 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  
-import gnome15.g15driver as g15driver
-import gnome15.g15screen as g15screen
-import gnome15.util.g15convert as g15convert
-import gnome15.util.g15scheduler as g15scheduler
+from gnome15 import g15driver
+from gnome15 import g15screen
+from gnome15.util import g15convert
+from gnome15.util import g15scheduler
 import logging
 logger = logging.getLogger(__name__)
 

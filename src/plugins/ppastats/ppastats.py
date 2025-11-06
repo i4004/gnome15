@@ -15,13 +15,19 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+import gi
+gi.require_version('Gtk','3.0')
+from gi.repository import Gtk
+gi.require_version('GConf','2.0')
+from gi.repository import GConf
  
-import gnome15.util.g15convert as g15convert
-import gnome15.util.g15scheduler as g15scheduler
-import gnome15.util.g15cairo as g15cairo
-import gnome15.util.g15icontools as g15icontools
-import gnome15.g15theme as g15theme
-import gnome15.g15driver as g15driver
+from gnome15.util import g15convert
+from gnome15.util import g15scheduler
+from gnome15.util import g15cairo
+from gnome15.util import g15icontools
+from gnome15 import g15theme
+from gnome15 import g15driver
 import subprocess
 import time
 import os
@@ -62,7 +68,7 @@ class G15PPAStatsPreferences():
         self.gconf_client = gconf_client
         self.gconf_key = gconf_key
         
-        widget_tree = gtk.Builder()
+        widget_tree = Gtk.Builder()
         widget_tree.add_from_file(os.path.join(os.path.dirname(__file__), "ppastats.ui"))
         
         # Feeds
@@ -97,20 +103,20 @@ class G15PPAStatsPreferences():
     def url_edited(self, widget, row_index, value):
         row = self.feed_model[row_index] 
         if value != "":
-            urls = self.gconf_client.get_list(self.gconf_key + "/urls", gconf.VALUE_STRING)
+            urls = self.gconf_client.get_list(self.gconf_key + "/urls", GConf.VALUE_STRING)
             if row[0] in urls:
                 urls.remove(row[0])
             urls.append(value)
-            self.gconf_client.set_list(self.gconf_key + "/urls", gconf.VALUE_STRING, urls)
+            self.gconf_client.set_list(self.gconf_key + "/urls", GConf.VALUE_STRING, urls)
         else:
             self.feed_model.remove(self.feed_model.get_iter(row_index))
         
-    def urls_changed(self, client, connection_id, entry, args):
+    def urls_changed(self, client, connection_id, entry, *args):
         self.reload_model()
         
     def reload_model(self):
         self.feed_model.clear()
-        for url in self.gconf_client.get_list(self.gconf_key + "/urls", gconf.VALUE_STRING):
+        for url in self.gconf_client.get_list(self.gconf_key + "/urls", GConf.VALUE_STRING):
             self.feed_model.append([ url, True ])
         
     def new_url(self, widget):
@@ -121,10 +127,10 @@ class G15PPAStatsPreferences():
     def remove_url(self, widget):        
         (model, path) = self.feed_list.get_selection().get_selected()
         url = model[path][0]
-        urls = self.gconf_client.get_list(self.gconf_key + "/projects", gconf.VALUE_STRING)
+        urls = self.gconf_client.get_list(self.gconf_key + "/projects", GConf.VALUE_STRING)
         if url in urls:
             urls.remove(url)
-            self.gconf_client.set_list(self.gconf_key + "/projects", gconf.VALUE_STRING, urls)   
+            self.gconf_client.set_list(self.gconf_key + "/projects", GConf.VALUE_STRING, urls)   
         
 class G15PPAPage():
     
@@ -204,15 +210,15 @@ class G15PPAStats():
             self.screen.redraw(page.page)
         self._schedule_refresh()
     
-    def _update_time_changed(self, client, connection_id, entry, args):
+    def _update_time_changed(self, client, connection_id, entry, *args):
         self.refresh_timer.cancel()
         self._schedule_refresh()
     
-    def _ppas_changed(self, client, connection_id, entry, args):
+    def _ppas_changed(self, client, connection_id, entry, *args):
         self._load_ppas()
     
     def _load_ppas(self):
-        ppa_list = self.gconf_client.get_list(self.gconf_key + "/ppas", gconf.VALUE_STRING)
+        ppa_list = self.gconf_client.get_list(self.gconf_key + "/ppas", GConf.VALUE_STRING)
         
         # Add new pages
         for url in ppa_list:

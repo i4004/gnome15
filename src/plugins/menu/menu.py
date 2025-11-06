@@ -14,18 +14,18 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  
-import gnome15.g15locale as g15locale
-_ = g15locale.get_translation("menu", modfile = __file__).ugettext
+from gnome15 import g15locale
+_ = g15locale.get_translation("menu", modfile = __file__).gettext
 
-import gnome15.g15theme as g15theme
-import gnome15.g15driver as g15driver
-import gnome15.g15screen as g15screen
-import gnome15.g15plugin as g15plugin
+from gnome15 import g15theme
+from gnome15 import g15driver
+from gnome15 import g15screen
+from gnome15 import g15plugin
 from gnome15.util.g15pythonlang import find
 import sys
 import cairo
 import base64
-from cStringIO import StringIO
+from io import BytesIO
 import logging
 logger = logging.getLogger(__name__)
 
@@ -143,9 +143,9 @@ class G15Menu(g15plugin.G15MenuPlugin):
             thumb_canvas = cairo.Context(img)
             try :
                 if item._item_page.thumbnail_painter(thumb_canvas, self.screen.height, True):
-                    img_data = StringIO()
+                    img_data = BytesIO()
                     img.write_to_png(img_data)
-                    item.thumbnail = base64.b64encode(img_data.getvalue())                    
+                    item.thumbnail = base64.b64encode(img_data.getvalue()).decode()                    
                     
             except Exception as e:
                 logger.warning("Problem with painting thumbnail in %s",

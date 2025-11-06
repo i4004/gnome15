@@ -21,7 +21,7 @@ joystick events) into the kernel.
         
 import logging
 import uinput
-import util.g15os as g15os
+from gnome15.util import g15os as g15os
 import os
 import subprocess
 from uinput.ev import *
@@ -333,7 +333,7 @@ def emit(target, code, value, syn=True):
     
 def __get_keys(prefix, exclude = None):
     l = []
-    for k in sorted(capabilities.iterkeys()):
+    for k in sorted(capabilities.keys()):
         if k.startswith(prefix) and ( exclude == None or not k.startswith(exclude) ):
             l.append(capabilities[k])
     return l

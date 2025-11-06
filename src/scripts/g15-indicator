@@ -22,13 +22,14 @@ desktop service (g15-desktop-service). It will display a list of currently activ
 screens on activation, and allow the configuration UI to be launched (g15-config)
 '''
 
+import gi
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk
+from gi.repository import AppIndicator3 as appindicator
+from gi.repository import GConf
+from gi.repository import GObject
 import sys
-import pygtk
-pygtk.require('2.0')
-import gtk
 import os
-import appindicator
-import gconf
 from threading import RLock
 
 # Allow running from local path
@@ -37,24 +38,22 @@ if os.path.exists(path):
     sys.path.insert(0, path)
 
 # Logging
-import gnome15.g15logging as g15logging
+from gnome15 import g15logging
 logger = g15logging.get_root_logger()
 
 # This block MUST be before the imports of the gnome15 modules
-import dbus
-import gobject
-gobject.threads_init()
+GObject.threads_init()
 import dbus
 from dbus.mainloop.glib import DBusGMainLoop
 from dbus.mainloop.glib import threads_init
 threads_init()
 DBusGMainLoop(set_as_default=True)
 
-import gnome15.g15globals as g15globals
-import gnome15.g15service as g15service
-import gnome15.g15screen as g15screen
-import gnome15.util.g15convert as g15convert
-import gnome15.g15desktop as g15desktop
+from gnome15 import g15globals
+from gnome15 import g15service
+from gnome15 import g15screen
+from gnome15.util import g15convert
+from gnome15 import g15desktop
 
 class G15Indicator(g15desktop.G15GtkMenuPanelComponent):
     
@@ -63,31 +62,31 @@ class G15Indicator(g15desktop.G15GtkMenuPanelComponent):
         
     def create_component(self):
         
-        item = gtk.MenuItem("Preferences")
+        item = Gtk.MenuItem("Preferences")
         item.connect("activate", self.show_configuration)
         self.menu.append(item)
         
-        item = gtk.MenuItem("About Gnome15")
+        item = Gtk.MenuItem("About Gnome15")
         item.connect("activate", self.about_info)
         self.menu.append(item)
         
-        self.menu.append(gtk.MenuItem())
+        self.menu.append(Gtk.MenuItem())
         
-        self.indicator = appindicator.Indicator("gnome15",
+        self.indicator = appindicator.Indicatori.new("gnome15",
                                self.get_icon_path("logitech-g-keyboard-panel"), 
-                               appindicator.CATEGORY_HARDWARE)
-        self.indicator.set_status (appindicator.STATUS_ACTIVE)
+                               appindicator.IndicatorCategory.HARDWARE)
+        self.indicator.set_status (appindicator.IndicatorStatus.ACTIVE)
         self.indicator.set_menu(self.menu)
         
     def clear_attention(self):
         self.remove_attention_menu_item()
         if self.conf_client.get_bool("/apps/gnome15/indicate_only_on_error"):
-            self.indicator.set_status (appindicator.STATUS_PASSIVE)
+            self.indicator.set_status (appindicator.IndicatorStatus.PASSIVE)
         else:
-            self.indicator.set_status (appindicator.STATUS_ACTIVE)
+            self.indicator.set_status (appindicator.IndicatorStatus.ACTIVE)
         
     def attention(self, message = None):
-        self.indicator.set_status (appindicator.STATUS_ATTENTION)
+        self.indicator.set_status (appindicator.IndicatorStatus.ATTENTION)
         
     def icons_changed(self):
         self.indicator.set_icon(self.get_icon_path([ "logitech-g-keyboard-panel", "logitech-g-keyboard-applet" ]))        
@@ -107,4 +106,4 @@ if __name__ == "__main__":
         sys.exit(1)
     
     G15Indicator().start_service()   
-    gtk.main()
+    Gtk.main()

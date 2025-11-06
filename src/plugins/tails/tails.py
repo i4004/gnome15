@@ -14,22 +14,25 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import gnome15.g15locale as g15locale
-_ = g15locale.get_translation("tails", modfile = __file__).ugettext
+from gnome15 import g15locale
+_ = g15locale.get_translation("tails", modfile = __file__).gettext
 
-import gnome15.util.g15gconf as g15gconf
-import gnome15.util.g15cairo as g15cairo
-import gnome15.util.g15icontools as g15icontools
-import gnome15.util.g15markup as g15markup
-import gnome15.g15theme as g15theme
-import gnome15.g15driver as g15driver
-import gnome15.g15screen as g15screen
+import gi
+gi.require_version('Gtk','3.0')
+from gi.repository import Gtk
+from gi.repository import GConf
+
+from gnome15.util import g15gconf 
+from gnome15.util import g15cairo
+from gnome15.util import g15icontools
+from gnome15.util import g15markup
+from gnome15 import g15theme
+from gnome15 import g15driver
+from gnome15 import g15screen
 import subprocess
 import time
 import tailer
 import os
-import gtk
-import gconf
 import logging
 import xdg.Mime as mime
 from threading import Thread
@@ -73,7 +76,7 @@ class G15TailsPreferences():
         self._gconf_client = gconf_client
         self._gconf_key = gconf_key
         
-        widget_tree = gtk.Builder()
+        widget_tree = Gtk.Builder()
         widget_tree.add_from_file(os.path.join(os.path.dirname(__file__), "tails.ui"))
         
         # Feeds
@@ -105,43 +108,43 @@ class G15TailsPreferences():
         self._gconf_client.set_int(self._gconf_key + "/lines", int(widget.get_value()))
         
     def add_file(self, file_path):
-        files = self._gconf_client.get_list(self._gconf_key + "/files", gconf.VALUE_STRING)
+        files = self._gconf_client.get_list(self._gconf_key + "/files", GConf.VALUE_STRING)
         if file_path in files:
             files.remove(file_path)
         files.append(file_path)
-        self._gconf_client.set_list(self._gconf_key + "/files", gconf.VALUE_STRING, files)
+        self._gconf_client.set_list(self._gconf_key + "/files", GConf.VALUE_STRING, files)
         
     def file_edited(self, widget, row_index, value):
-        files = self._gconf_client.get_list(self._gconf_key + "/files", gconf.VALUE_STRING)
+        files = self._gconf_client.get_list(self._gconf_key + "/files", GConf.VALUE_STRING)
         row_index = int(row_index)
         if value != "":
             if self.file_model[row_index][0] != value:
                 self.file_model.set_value(self.file_model.get_iter(row_index), 0, value)
                 files[row_index] = value
-                self._gconf_client.set_list(self._gconf_key + "/files", gconf.VALUE_STRING, files)
+                self._gconf_client.set_list(self._gconf_key + "/files", GConf.VALUE_STRING, files)
         else:
             self.file_model.remove(self.file_model.get_iter(row_index))
             del files[row_index]
-            self._gconf_client.set_list(self._gconf_key + "/files", gconf.VALUE_STRING, files)
+            self._gconf_client.set_list(self._gconf_key + "/files", GConf.VALUE_STRING, files)
         
-    def files_changed(self, client, connection_id, entry, args):
+    def files_changed(self, client, connection_id, entry, *args):
         self.reload_model()
         
     def reload_model(self):
         self.file_model.clear()
-        for url in self._gconf_client.get_list(self._gconf_key + "/files", gconf.VALUE_STRING):
+        for url in self._gconf_client.get_list(self._gconf_key + "/files", GConf.VALUE_STRING):
             self.file_model.append([ url, True ])
         
     def new_file(self, widget):
-        dialog = gtk.FileChooserDialog(_("Add file to monitor.."),
+        dialog = Gtk.FileChooserDialog(_("Add file to monitor.."),
                                None,
-                               gtk.FILE_CHOOSER_ACTION_OPEN,
-                               (gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
-                                gtk.STOCK_OPEN, gtk.RESPONSE_OK))
-        dialog.set_default_response(gtk.RESPONSE_OK)
+                               Gtk.FILE_CHOOSER_ACTION_OPEN,
+                               (Gtk.STOCK_CANCEL, Gtk.RESPONSE_CANCEL,
+                                Gtk.STOCK_OPEN, Gtk.RESPONSE_OK))
+        dialog.set_default_response(Gtk.RESPONSE_OK)
         dialog.set_transient_for(self.dialog)
         response = dialog.run()
-        if response == gtk.RESPONSE_OK:
+        if response == Gtk.RESPONSE_OK:
             self.file_model.append([dialog.get_filename(), True])
             self.add_file(dialog.get_filename())
             
@@ -150,10 +153,10 @@ class G15TailsPreferences():
     def remove_file(self, widget):        
         (model, path) = self.file_list.get_selection().get_selected()
         file = model[path][0]
-        files = self._gconf_client.get_list(self._gconf_key + "/files", gconf.VALUE_STRING)
+        files = self._gconf_client.get_list(self._gconf_key + "/files", GConf.VALUE_STRING)
         if file in files:
             files.remove(file)
-            self._gconf_client.set_list(self._gconf_key + "/files", gconf.VALUE_STRING, files)   
+            self._gconf_client.set_list(self._gconf_key + "/files", GConf.VALUE_STRING, files)   
         
         
 class G15TailMenuItem(g15theme.MenuItem):
@@ -324,15 +327,15 @@ class G15Tails():
     def destroy(self):
         pass 
     
-    def _lines_changed(self, client, connection_id, entry, args):
+    def _lines_changed(self, client, connection_id, entry, *args):
         self._load_files()
         
-    def _files_changed(self, client, connection_id, entry, args):
+    def _files_changed(self, client, connection_id, entry, *args):
         self._load_files()
     
     def _load_files(self):
         self.lines = g15gconf.get_int_or_default(self._gconf_client, "%s/lines" % self._gconf_key, 10)
-        file_list = self._gconf_client.get_list(self._gconf_key + "/files", gconf.VALUE_STRING)
+        file_list = self._gconf_client.get_list(self._gconf_key + "/files", GConf.VALUE_STRING)
         
         def init():
             # Add new pages

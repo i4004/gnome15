@@ -14,17 +14,20 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  
-import gnome15.g15locale as g15locale
-_ = g15locale.get_translation("screensaver", modfile = __file__).ugettext
+from gnome15 import g15locale
+_ = g15locale.get_translation("screensaver", modfile = __file__).gettext
 
-import gnome15.g15screen as g15screen
-import gnome15.g15driver as g15driver
-import gnome15.util.g15uigconf as g15uigconf
-import gnome15.util.g15gconf as g15gconf
-import gnome15.util.g15icontools as g15icontools
-import gnome15.g15theme as g15theme
+import gi
+gi.require_version('Gtk','3.0')
+from gi.repository import Gtk
+
+from gnome15 import g15screen
+from gnome15 import g15driver
+from gnome15.util import g15uigconf
+from gnome15.util import g15gconf
+from gnome15.util import g15icontools
+from gnome15 import g15theme
 from threading import Timer
-import gtk
 import dbus
 import logging
 import os.path
@@ -49,7 +52,7 @@ def create(gconf_key, gconf_client, screen):
     return G15ScreenSaver(gconf_key, gconf_client, screen)
 
 def show_preferences(parent, driver, gconf_client, gconf_key):
-    widget_tree = gtk.Builder()
+    widget_tree = Gtk.Builder()
     widget_tree.add_from_file(os.path.join(os.path.dirname(__file__), "screensaver.ui"))
     
     dialog = widget_tree.get_object("ScreenSaverDialog")

@@ -14,28 +14,26 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  
-import gnome15.g15locale as g15locale
-_ = g15locale.get_translation("processes", modfile = __file__).ugettext
+from gnome15 import g15locale
+_ = g15locale.get_translation("processes", modfile = __file__).gettext
 
-import gnome15.util.g15scheduler as g15scheduler
-import gnome15.util.g15cairo as g15cairo
-import gnome15.util.g15icontools as g15icontools
-import gnome15.g15theme as g15theme
-import gnome15.g15driver as g15driver
-import gnome15.g15plugin as g15plugin
+import gi
+from gi.repository import GObject
+from gi.repository import GLib
+
+
+from gnome15.util import g15scheduler
+from gnome15.util import g15cairo
+from gnome15.util import g15icontools
+from gnome15 import g15theme
+from gnome15 import g15driver
+from gnome15 import g15plugin
 import os
 import dbus
 import time
-import gobject
 import logging
 logger = logging.getLogger(__name__)
-
-try:
-    import gtop
-except Exception as e:
-    logger.debug("Could not import gtop module. Will use g15top instead", exc_info = e)
-    # API compatible work around for Ubuntu 12.10
-    import gnome15.g15top as gtop
+from gnome15 import g15top as gtop
 
 from Xlib import X
 import Xlib.protocol.event
@@ -220,13 +218,13 @@ class G15Processes(g15plugin.G15MenuPlugin):
         if isinstance(process_id, int):
             self._do_kill(process_id)
         else:            
-            gobject.idle_add(self._kill_window, process_id)
+            GLib.idle_add(self._kill_window, process_id)
         self.confirmation_screen = None
         self._reload_menu()
         
     def _kill_window(self, window_path):
-        import wnck
-        import gtk
+        from gi.repository import Wnck as wnck
+        from gi.repository import Gtk as gtk
         window_names = self._get_window_names(window_path)
         screen = wnck.screen_get_default()
         while gtk.events_pending():
@@ -312,7 +310,8 @@ class G15Processes(g15plugin.G15MenuPlugin):
                         logger.debug("Could not get info from BAMF", exc_info = e)
                         pass
             else:
-                import wnck
+                from gi.repository import Wnck as wnck
+
                 screen = wnck.screen_get_default()
                 for window in screen.get_windows():
                     pid = window.get_pid()

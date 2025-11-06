@@ -14,23 +14,26 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import gnome15.g15locale as g15locale
-_ = g15locale.get_translation("volume", modfile = __file__).ugettext
+from gnome15 import g15locale
+_ = g15locale.get_translation("volume", modfile = __file__).gettext
 
-import gnome15.g15screen as g15screen
-import gnome15.util.g15scheduler as g15scheduler
-import gnome15.util.g15uigconf as g15uigconf
-import gnome15.util.g15gconf as g15gconf
-import gnome15.util.g15icontools as g15icontools
-import gnome15.g15theme as g15theme
-import gnome15.g15driver as g15driver
-import gnome15.g15devices as g15devices
-import gnome15.g15actions as g15actions
+import gi
+gi.require_version('Gtk','3.0')
+from gi.repository import Gtk
+
+from gnome15 import g15screen
+from gnome15.util import g15scheduler
+from gnome15.util import g15uigconf
+from gnome15.util import g15gconf
+from gnome15.util import g15icontools
+from gnome15 import g15theme
+from gnome15 import g15driver
+from gnome15 import g15devices
+from gnome15 import g15actions
 
 import alsaaudio
 import select
 import os
-import gtk
 import logging
 logger = logging.getLogger(__name__)
 
@@ -96,7 +99,7 @@ def show_preferences(parent, driver, gconf_client, gconf_key):
         # And since the list of mixers has changed, we select the first one by default
         mixer_combo.set_active(0)
 
-    widget_tree = gtk.Builder()
+    widget_tree = Gtk.Builder()
     widget_tree.add_from_file(os.path.join(os.path.dirname(__file__), "volume.ui"))
     dialog = widget_tree.get_object("VolumeDialog") 
     soundcard_combo = widget_tree.get_object('SoundcardCombo')
@@ -212,7 +215,7 @@ class G15Volume():
         self._volthread = VolumeThread(self)
         self._volthread.start()
     
-    def _config_changed(self, client, connection_id, entry, args):    
+    def _config_changed(self, client, connection_id, entry, *args):    
         '''
         If the user changes the soundcard on the preferences dialog this method
         would be called two times. A first time for the soundcard change, and a
@@ -390,18 +393,18 @@ class VolumeThread(Thread):
         self._event_mask = self._poll_desc[0][1]
         self._open = os.fdopen(self._fd)
         self._poll.register(self._open, select.POLLIN)
-        self._stop = False
+        self._should_stop = False
         
     def _stop_monitoring(self):
-        self._stop = True
+        self._should_stop = True
         self._open.close()
         self._mixer.close()
         
     def run(self):
         try :
-            while not self._stop:
+            while not self._should_stop:
                 if self._poll.poll(5):
-                    if self._stop:
+                    if self._should_stop:
                         break
                     g15scheduler.schedule("popupVolume", 0, self._volume._popup)
                     if not self._open.read():

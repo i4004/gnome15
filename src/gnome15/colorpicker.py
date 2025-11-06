@@ -14,12 +14,12 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import gtk
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk, GObject, Gdk
 import cairo
-from gtk import gdk
-import gobject
-import g15globals
-import util.g15convert as g15convert
+from gnome15 import g15globals
+from gnome15.util import g15convert as g15convert
 import os
 
 COLORS_REDBLUE = [(0, 0, 0, 1), (255, 0, 0, 1), (255, 0, 255, 1), (0, 0, 255, 1)  ]
@@ -35,10 +35,10 @@ def _get_color_at( buffer, x, y):
     data = buffer.get_data()
     w = buffer.get_width()
     s = ( buffer.get_stride() / w ) * ( w  * y + x )
-    s = max(0, min(s, len(data) - 3))
-    b = ord(data[s])
-    g = ord(data[s + 1])  
-    r = ord(data[s + 2])
+    s = int(max(0, min(s, len(data) - 3)))
+    b = data[s]
+    g = data[s + 1]  
+    r = data[s + 2]
     return (r, g, b)
         
 def _rounded_rectangle(cr, x, y, w, h, r=20):
@@ -52,17 +52,17 @@ def _rounded_rectangle(cr, x, y, w, h, r=20):
     cr.line_to(x,y+r)                      # Line to H
     cr.curve_to(x,y,x,y,x+r,y)             # Curve to A
 
-class ColorPreview(gtk.DrawingArea):
+class ColorPreview(Gtk.DrawingArea):
 
     def __init__(self, picker):              
-        self.__gobject_init__()
+        #self.__gobject_init__()
         self.picker = picker
         super(ColorPreview, self).__init__()
         self.set_size_request(CELL_WIDTH, CELL_HEIGHT)
-        self.connect("expose-event", self._expose)
+        self.connect("draw", self._expose)
         self.connect("button-press-event", self._button_press)
         self.down = False
-        self.add_events(gdk.BUTTON1_MOTION_MASK | gdk.BUTTON_PRESS_MASK)
+        self.add_events(Gdk.EventMask.BUTTON1_MOTION_MASK | Gdk.EventMask.BUTTON_PRESS_MASK)
             
     def _show_redblue_picker(self, widget_tree):
         main_window = widget_tree.get_object("RBPicker")
@@ -100,7 +100,7 @@ class ColorPreview(gtk.DrawingArea):
         c_widget.connect("button-press-event", _button_press)
         c_widget.connect("button-release-event", _button_release)
         c_widget.connect("motion-notify-event", _mouse_motion)
-        c_widget.add_events(gdk.BUTTON1_MOTION_MASK | gdk.BUTTON_PRESS_MASK | gdk.BUTTON_RELEASE_MASK | gtk.gdk.POINTER_MOTION_MASK | gtk.gdk.POINTER_MOTION_HINT_MASK)
+        c_widget.add_events(Gdk.EventMask.BUTTON1_MOTION_MASK | Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask.BUTTON_RELEASE_MASK | Gdk.EventMask.POINTER_MOTION_MASK | Gdk.EventMask.POINTER_MOTION_HINT_MASK)
         
         main_window.set_transient_for(self.get_toplevel())
         main_window.run()            
@@ -118,7 +118,7 @@ class ColorPreview(gtk.DrawingArea):
         main_window.hide()
         
     def _button_press(self, widget, event):
-        widget_tree = gtk.Builder()
+        widget_tree = Gtk.Builder()
         widget_tree.set_translation_domain("colorpicker")
         widget_tree.add_from_file(os.path.join(g15globals.ui_dir, 'colorpicker.ui'))
         if self.picker.redblue:
@@ -128,10 +128,10 @@ class ColorPreview(gtk.DrawingArea):
 
     def _expose(self, widget, event):
         size = self.size_request()
-        cell_height = self.allocation[3]
-        cell_width = self.allocation[2]
+        cell_height = self.get_allocated_height()
+        cell_width = self.get_allocated_width()
 
-        ctx = widget.window.cairo_create()
+        ctx = widget.get_window().cairo_create()
         ctx.set_line_width(1.0)
         
         # Draw to a back buffer so we can get the color at the point
@@ -143,19 +143,19 @@ class ColorPreview(gtk.DrawingArea):
         _rounded_rectangle(ctx, 0, 0, cell_width, cell_height, 16)
         ctx.stroke()     
 
-class ColorBar(gtk.DrawingArea):
+class ColorBar(Gtk.DrawingArea):
 
     def __init__(self, picker):        
-        self.__gobject_init__()
+        #self.__gobject_init__()
         super(ColorBar, self).__init__()
         self.picker = picker
         self.set_size_request(len(self.picker.colors) * CELL_WIDTH, CELL_HEIGHT)
-        self.connect("expose-event", self._expose)
+        self.connect("draw", self._expose)
         self.connect("button-press-event", self._button_press)
         self.connect("button-release-event", self._button_release)
         self.connect("motion-notify-event", self._mouse_motion)
         self.down = False
-        self.add_events(gdk.BUTTON1_MOTION_MASK | gdk.BUTTON_PRESS_MASK | gdk.BUTTON_RELEASE_MASK | gtk.gdk.POINTER_MOTION_MASK | gtk.gdk.POINTER_MOTION_HINT_MASK)
+        self.add_events(Gdk.EventMask.BUTTON1_MOTION_MASK | Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask.BUTTON_RELEASE_MASK | Gdk.EventMask.POINTER_MOTION_MASK | Gdk.EventMask.POINTER_MOTION_HINT_MASK)
         self.picker_image_surface = None
     
     def _mouse_motion(self, widget, event):
@@ -187,9 +187,9 @@ class ColorBar(gtk.DrawingArea):
         ctx.translate(cell_width, 0)
 
     def _expose(self, widget, event):
-        cr = widget.window.cairo_create()
+        cr = widget.get_window().cairo_create()
         cr.set_line_width(1.0)
-        size = (self.allocation[2],self.allocation[3])
+        size = (self.get_allocated_width(),self.get_allocated_height())
         cell_height = size[1]
         tc = len(self.picker.colors)
         cell_width = size[0] / tc
@@ -221,11 +221,11 @@ class ColorBar(gtk.DrawingArea):
         cr.paint()
         self.picker_image_surface = picker_image_surface
     
-class ColorPicker(gtk.HBox):
+class ColorPicker(Gtk.HBox):
 
     def __init__(self, colors = None, redblue = False):
-        self.__gobject_init__()
-        gtk.HBox.__init__(self, spacing = 8)
+        #self.__gobject_init__()
+        GObject.GObject.__init__(self, spacing = 8)
         self.colors = colors if colors is not None else ( COLORS_REDBLUE if redblue else COLORS_FULL )
         self.redblue = redblue
         self.color = (0,0,0)
@@ -234,8 +234,8 @@ class ColorPicker(gtk.HBox):
         bar = ColorBar(self)
         preview = ColorPreview(self)
         
-        self.pack_start(bar, True, True)
-        self.pack_start(preview, False, True)
+        self.pack_start(bar, True, True,0)
+        self.pack_start(preview, False, True,0)
         
     def set_color(self, color):
         self.color = color
@@ -246,8 +246,8 @@ class ColorPicker(gtk.HBox):
         self.queue_draw()
         self.emit("color-chosen")
 
-gobject.type_register(ColorPicker)
-gobject.type_register(ColorBar)
-gobject.type_register(ColorPreview)
-gobject.signal_new("color-chosen", ColorPicker, gobject.SIGNAL_RUN_FIRST,
-                   gobject.TYPE_NONE, ())
+GObject.type_register(ColorPicker)
+GObject.type_register(ColorBar)
+GObject.type_register(ColorPreview)
+GObject.signal_new("color-chosen", ColorPicker, GObject.SignalFlags.RUN_FIRST,
+                   None, ())

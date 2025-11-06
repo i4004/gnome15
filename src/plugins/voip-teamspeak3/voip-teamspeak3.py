@@ -16,11 +16,11 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import gnome15.g15locale as g15locale
-_ = g15locale.get_translation("voip-teamspeak3", modfile = __file__).ugettext
+from gnome15 import g15locale
+_ = g15locale.get_translation("voip-teamspeak3", modfile = __file__).gettext
 
-import gnome15.g15driver as g15driver
-import gnome15.util.g15icontools as g15icontools
+from gnome15 import g15driver as g15driver
+from gnome15.util import g15icontools
 import ts3
 from threading import Thread
 from threading import Lock
@@ -348,14 +348,14 @@ class Teamspeak3Backend(voip.VoipBackend):
     Private
     """
     def _handle_error(self, error):
-        print error
+        print(error)
         if isinstance(error, EOFError):
             self._disconnected()
         else:
             logger.warning("Teamspeak3 error. %s", str(error))
         
     def _handle_message(self, message):
-        print message.command
+        print(message.command)
         try:
             if message.command == 'notifyclientupdated':
                 self._parse_notifyclientupdated(message)
@@ -392,7 +392,7 @@ class Teamspeak3Backend(voip.VoipBackend):
             logger.error("Possible corrupt reply.", exc_info = e)
                 
     def _disconnected(self):
-        print "disconnex"
+        print("disconnex")
         self._plugin._disconnected()
         
     def _create_channel_item(self, message, schandlerid):

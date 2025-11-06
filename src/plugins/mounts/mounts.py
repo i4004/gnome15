@@ -14,21 +14,24 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import gnome15.g15locale as g15locale
-_ = g15locale.get_translation("mounts", modfile = __file__).ugettext
+from gnome15 import g15locale
+_ = g15locale.get_translation("mounts", modfile = __file__).gettext
 
-import gnome15.g15plugin as g15plugin
-import gnome15.util.g15uigconf as g15uigconf
-import gnome15.util.g15scheduler as g15scheduler
-import gnome15.util.g15gconf as g15gconf
-import gnome15.util.g15icontools as g15icontools
-import gnome15.g15theme as g15theme
-import gnome15.g15driver as g15driver
-import gnome15.g15screen as g15screen
-import gio
-import gtk
+import gi
+gi.require_version('Gtk','3.0')
+from gi.repository import Gtk
+from gi.repository import GObject
+from gi.repository import Gio
+
+from gnome15 import g15plugin
+from gnome15.util import g15uigconf
+from gnome15.util import g15scheduler
+from gnome15.util import g15gconf
+from gnome15.util import g15icontools
+from gnome15 import g15theme
+from gnome15 import g15driver
+from gnome15 import g15screen
 import os.path
-import gobject
 
 # Logging
 import logging
@@ -56,7 +59,7 @@ actions={
 
 
 def show_preferences(parent, driver, gconf_client, gconf_key):
-    widget_tree = gtk.Builder()
+    widget_tree = Gtk.Builder()
     widget_tree.add_from_file(os.path.join(os.path.dirname(__file__), "mounts.ui"))
     dialog = widget_tree.get_object("MountsDialog")
     dialog.set_transient_for(parent)
@@ -190,10 +193,10 @@ class G15Places(g15plugin.G15MenuPlugin):
         self.screen.key_handler.action_listeners.append(self)
         
         # Get the initial list of volumes and mounts
-        gobject.idle_add(self._do_activate)
+        GObject.idle_add(self._do_activate)
         
     def _do_activate(self):
-        self.volume_monitor = gio.VolumeMonitor()
+        self.volume_monitor = Gio.VolumeMonitor.get()
         for mount in self.volume_monitor.get_mounts():
             if not mount.is_shadowed():
                 self._add_mount(mount)

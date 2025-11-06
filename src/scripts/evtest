@@ -54,20 +54,20 @@ class ForwardDevice(SimpleDevice):
         return code
     
     def receive(self, event):
-        print "Event: %s" % str(event)
+        print("Event: %s" % str(event))
         if event.etype == S.EV_KEY:
             key = str(event.ecode)
             if event.evalue == 2:
-                print "Auto %s" % key
+                print("Auto %s" % key)
             else:
                 if event.evalue == 1:
-                    print "Down %s" % key
+                    print("Down %s" % key)
                 else:
-                    print "Up %s" % key
+                    print("Up %s" % key)
         elif event.etype == 0:
-            print "Etype 0"
+            print("Etype 0")
         else:
-            print "Unhandled event: %s" % str(event)
+            print("Unhandled event: %s" % str(event))
     
 if __name__ == "__main__":
     parser = optparse.OptionParser()

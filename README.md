@@ -1,12 +1,4 @@
-STATUS OF THIS REPOSITORY
-=========================
-
-I don't have the keyboard anymore for some time now and stopped developing a version using python3 (see python 3 branch). The conversion itself was complete but
-there were still bugs to fix and things to do in order to make it work with wayland.
-
-
-STATUS OF GNOME15
-=================
+# STATUS OF GNOME15
 
 Gnome15 is currently **not complete maintained**.
 The original primary repository has been unavailable since November 2014 due to a hosting server crash.
@@ -15,8 +7,7 @@ This fork was made to add a feature and has not been updated since November 2013
 I intend to bring this repository up to date with the latest version (the version before the server crash) using the code contained in the latest distribution packages available.
 We want to maintain it, so many we can. Feel free to work with.
 
-Gnome15
-=======
+# Gnome15
 
 A set of tools for configuring the Logitech G15 keyboard.
 
@@ -27,21 +18,50 @@ the work of "MultiCoreNop" [2].
 1. http://github.com/MultiCoreNop/Logitech-G19-Linux-Daemon
 2. http://github.com/MultiCoreNop
 
-Installation
-============
+# Installation
+Dependencies may be incomplete.. 
 
-See the 'INSTALL' file or the [Wiki Entry](https://github.com/Huskynarr/gnome15/wiki/INSTALL)
+``` sh
 
-How to report bugs
-==================
+sudo dnf install libXtst-devel libxkbfile-devel
+
+cd ./tmp
+wget https://launchpad.net/virtkey/0.63/0.63.0/+download/virtkey-0.63.0.tar.gz
+tar -xf virtkey-0.63.0.tar.gz
+cd virtkey-0.63.0
+sudo python setup.py install
+cd ../..
+
+sudo pip install keyring
+
+cd ./tmp
+git clone https://github.com/guidugli/pyinputevent.git
+cd pyinputevent
+sudo python setup.py install
+cd ../..
+
+cd ./tmp
+git clone https://github.com/tuomasjjrasanen/python-uinput.git
+cd python-uinput
+sudo python setup.py install
+cd ../..
+
+sudo autoreconf -i
+sudo ./configure
+make
+sudo make install
+```
+
+# How to report bugs
+
 
 Issues can be submited on the [github website](https://github.com/Huskynarr/gnome15/issues) [3].
 
 3. https://github.com/Huskynarr/gnome15/issues
 
-Requirements
-============
+# Requirements
 
+## Old
 - Python 2.6
 - PyUSB 0.4
 - PIL (Python Image Library, just about any version should be ok)

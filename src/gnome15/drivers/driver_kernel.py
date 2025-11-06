@@ -14,36 +14,36 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import gnome15.g15locale as g15locale
-_ = g15locale.get_translation("gnome15-drivers").ugettext
+from gnome15 import g15locale
+_ = g15locale.get_translation("gnome15-drivers").gettext
 
-from cStringIO import StringIO
+from io import StringIO
 from pyinputevent.uinput import UInputDevice
 from pyinputevent.pyinputevent import InputEvent, SimpleDevice
 from pyinputevent.keytrans import *
 from threading import Thread
 
 import select 
-import pyinputevent.scancodes as S
-import gnome15.g15driver as g15driver
-import gnome15.util.g15scheduler as g15scheduler
-import gnome15.util.g15uigconf as g15uigconf
-import gnome15.g15globals as g15globals
-import gnome15.g15uinput as g15uinput
-import gconf
+from pyinputevent import scancodes as S
+from gnome15 import g15driver
+from gnome15.util import g15scheduler
+from gnome15.util import g15uigconf
+from gnome15 import g15globals
+from gnome15 import g15uinput
+from gi.repository import GConf
 import fcntl
 import os
-import gtk
+from gi.repository import Gtk
 import cairo
 import re
 import usb
-import fb
+from . import fb
 from PIL import Image
 from PIL import ImageMath
 import array
 import struct
 import dbus
-import gobject
+from gi.repository import GObject
 
 # Logging
 import logging
@@ -580,10 +580,10 @@ class KernelDriverPreferences():
     def __init__(self, device, parent, gconf_client):
         self.device = device
         
-        widget_tree = gtk.Builder()
+        widget_tree = Gtk.Builder()
         widget_tree.add_from_file(os.path.join(g15globals.ui_dir, "driver_kernel.ui"))
         self.window = widget_tree.get_object("KernelDriverSettings")
-        self.window.set_transient_for(parent)
+        self.set_transient_for(parent)
         
         self.joy_mode_label = widget_tree.get_object("JoyModeLabel")
         self.joy_mode_combo = widget_tree.get_object("JoyModeCombo")
@@ -597,9 +597,9 @@ class KernelDriverPreferences():
             if dev_file.startswith("fb"):
                 device_model.append(["/dev/%s" % dev_file])
                   
-        g15uigconf.configure_combo_from_gconf(gconf_client, "/apps/gnome15/%s/fb_device" % device.uid, "DeviceCombo", "auto", widget_tree)
-        g15uigconf.configure_combo_from_gconf(gconf_client, "/apps/gnome15/%s/joymode" % device.uid, "JoyModeCombo", "macro", widget_tree)
-        g15uigconf.configure_checkbox_from_gconf(gconf_client, "/apps/gnome15/%s/grab_multimedia" % device.uid, "GrabMultimedia", False, widget_tree)
+        g15uiGConf.configure_combo_from_gconf(gconf_client, "/apps/gnome15/%s/fb_device" % device.uid, "DeviceCombo", "auto", widget_tree)
+        g15uiGConf.configure_combo_from_gconf(gconf_client, "/apps/gnome15/%s/joymode" % device.uid, "JoyModeCombo", "macro", widget_tree)
+        g15uiGConf.configure_checkbox_from_gconf(gconf_client, "/apps/gnome15/%s/grab_multimedia" % device.uid, "GrabMultimedia", False, widget_tree)
         
         self.grab_multimedia.set_sensitive(device_info[device.model_id].mm_pattern is not None)
         
@@ -986,7 +986,7 @@ class Driver(g15driver.AbstractDriver):
         self.device = device
         self.device_info = None
         self.system_service = None
-        self.conf_client = gconf.client_get_default()
+        self.conf_client = GConf.Client.get_default()
         
         try:
             self._init_device()
@@ -1012,7 +1012,7 @@ class Driver(g15driver.AbstractDriver):
         return self.system_service != None
     
     def get_model_names(self):
-        return device_info.keys()
+        return list(device_info.keys())
             
     def get_name(self):
         return "Linux Logitech Kernel Driver"
@@ -1058,10 +1058,10 @@ class Driver(g15driver.AbstractDriver):
             logger.info("Enabling macro keys for joystick")
             self.calibration = 64
             
-    def _config_changed(self, client, connection_id, entry, args):
+    def _config_changed(self, client, connection_id, entry, *args):
         self._reload_and_reconnect()
         
-    def _framebuffer_device_changed(self, client, connection_id, entry, args):
+    def _framebuffer_device_changed(self, client, connection_id, entry, *args):
         self._reload_and_reconnect()
         
     def get_size(self):
@@ -1309,7 +1309,7 @@ It should be launched automatically if Gnome15 is installed correctly.")
             self.system_service.SetLight(self.device.uid, name, value)
     
     def _write_to_led(self, name, value):
-        gobject.idle_add(self._do_write_to_led, name, value)
+        GObject.idle_add(self._do_write_to_led, name, value)
 
     def _set_keymap(self, keymap):
         for devpath in self.keyboard_devices:
@@ -1317,7 +1317,7 @@ It should be launched automatically if Gnome15 is installed correctly.")
             fd = open(devpath, "rw")
             try:
                 buf = array.array('B', [0] * sizeof(input_keymap_entry_t))
-                for scancode, keycode in keymap.items():
+                for scancode, keycode in list(keymap.items()):
                     struct.pack_into(input_keymap_entry_t, buf, 0,
                                      0, # flags
                                      sizeof('I'), # len
@@ -1359,7 +1359,7 @@ It should be launched automatically if Gnome15 is installed correctly.")
         logger.info("G key - %d", key)
         return True
         
-    def _mode_changed(self, client, connection_id, entry, args):
+    def _mode_changed(self, client, connection_id, entry, *args):
         if self.is_connected():
             self.disconnect()
     

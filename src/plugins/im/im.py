@@ -22,14 +22,14 @@
 # LGPL. See http://telepathy.freedesktop.org/wiki/Contact%20selector
 
 
-import gnome15.g15locale as g15locale
+from gnome15 import g15locale
 _ = g15locale.get_translation("im", modfile = __file__).ugettext
 
-import gnome15.util.g15scheduler as g15scheduler
-import gnome15.util.g15icontools as g15icontools
-import gnome15.g15theme as g15theme
-import gnome15.g15driver as g15driver
-import gnome15.g15plugin as g15plugin
+from gnome15.util import g15scheduler
+from gnome15.util import g15icontools
+from gnome15 import g15theme
+from gnome15 import g15driver
+from gnome15 import g15plugin
 import dbus
 import telepathy
 from telepathy.interfaces import (

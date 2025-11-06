@@ -15,24 +15,27 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  
-import gnome15.g15locale as g15locale
-_ = g15locale.get_translation("weather", modfile = __file__).ugettext
+from gnome15 import g15locale
+_ = g15locale.get_translation("weather", modfile = __file__).gettext
 
-import gnome15.g15screen as g15screen
-import gnome15.util.g15convert as g15convert
-import gnome15.util.g15scheduler as g15scheduler
-import gnome15.util.g15uigconf as g15uigconf
-import gnome15.util.g15pythonlang as g15pythonlang
-import gnome15.util.g15gconf as g15gconf
-import gnome15.util.g15cairo as g15cairo
-import gnome15.util.g15icontools as g15icontools
-import gnome15.g15driver as g15driver
-import gnome15.g15globals as g15globals
-import gnome15.g15text as g15text
-import gnome15.g15plugin as g15plugin
-import gtk
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Pango
+from gi.repository import Gtk
+
+from gnome15 import g15screen
+from gnome15.util import g15convert
+from gnome15.util import g15scheduler
+from gnome15.util import g15uigconf
+from gnome15.util import g15pythonlang
+from gnome15.util import g15gconf
+from gnome15.util import g15cairo
+from gnome15.util import g15icontools
+from gnome15 import g15driver
+from gnome15 import g15globals
+from gnome15 import g15text
+from gnome15 import g15plugin
 import os
-import pango
 import logging
 import time
 import sys
@@ -83,7 +86,7 @@ def get_backend(account_type):
     Keyword arguments:
     account_type          -- account type
     """
-    import gnome15.g15pluginmanager as g15pluginmanager
+    from gnome15 import g15pluginmanager
     return g15pluginmanager.get_module_for_id("weather-%s" % account_type)
 
 def get_available_backends():
@@ -92,7 +95,7 @@ def get_available_backends():
     backend plugins that are installed 
     """
     l = []
-    import gnome15.g15pluginmanager as g15pluginmanager
+    from gnome15 import g15pluginmanager
     for p in g15pluginmanager.imported_plugins:
         if p.id.startswith("weather-"):
             l.append(p.id[8:])
@@ -120,7 +123,7 @@ class G15WeatherPreferences():
         self._gconf_key = gconf_key
         self._visible_options = None
         
-        self._widget_tree = gtk.Builder()
+        self._widget_tree = Gtk.Builder()
         self._widget_tree.add_from_file(os.path.join(os.path.dirname(__file__), "weather.ui"))
         
         dialog = self._widget_tree.get_object("WeatherDialog")
@@ -176,7 +179,7 @@ class G15WeatherPreferences():
         if self._visible_options is not None:                   
             self._visible_options.component.reparent(place_holder)
         else:                   
-            l = gtk.Label("No options found for this source\n")
+            l = Gtk.Label("No options found for this source\n")
             l.xalign = 0.5
             l.show()
             place_holder.add(l)
@@ -266,7 +269,7 @@ class G15Weather(g15plugin.G15RefreshingPlugin):
         val = g15gconf.get_int_or_default(self.gconf_client, self.gconf_key + "/update", DEFAULT_UPDATE_INTERVAL)
         self.refresh_interval = val * 60.0
         
-    def _loc_changed(self, client, connection_id, entry, args):
+    def _loc_changed(self, client, connection_id, entry, *args):
         if not entry.get_key().endswith("/theme") and not entry.get_key().endswith("/enabled"):
             if self._config_change_handle is not None:
                 self._config_change_handle.cancel()
@@ -512,7 +515,7 @@ class G15Weather(g15plugin.G15RefreshingPlugin):
             if "temp_short" in self._page_properties:
                 self._text.set_attributes(self._page_properties["temp_short"], \
                                           font_desc = g15globals.fixed_size_font_name, \
-                                          font_absolute_size =  6 * pango.SCALE / 2)
+                                          font_absolute_size =  6 * Pango.SCALE / 2)
                 x, y, width, height = self._text.measure()
                 total_taken += width
                 self._text.draw(x, y)
@@ -524,12 +527,12 @@ class G15Weather(g15plugin.G15RefreshingPlugin):
                 total_taken += size
             if "temp" in self._page_properties:
                 if horizontal:
-                    self._text.set_attributes(self._page_properties["temp"], font_desc = "Sans", font_absolute_size =  allocated_size * pango.SCALE / 2)
+                    self._text.set_attributes(self._page_properties["temp"], font_desc = "Sans", font_absolute_size =  allocated_size * Pango.SCALE / 2)
                     x, y, width, height = self._text.measure()
                     self._text.draw(total_taken, (allocated_size / 2) - height / 2)
                     total_taken += width + 4
                 else:  
-                    self._text.set_attributes(self._page_properties["temp"], font_desc = "Sans", font_absolute_size =  allocated_size * pango.SCALE / 4)
+                    self._text.set_attributes(self._page_properties["temp"], font_desc = "Sans", font_absolute_size =  allocated_size * Pango.SCALE / 4)
                     x, y, width, height = self._text.measure()
                     self._text.draw((allocated_size / 2) - width / 2, total_taken)
                     total_taken += height + 4     

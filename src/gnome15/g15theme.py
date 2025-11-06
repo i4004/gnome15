@@ -37,33 +37,37 @@ the SVG by doing string replacements and other manipulations such as those requi
 for progress bars, scroll bars.
 """
 
+import gi
+gi.require_version('Rsvg', '2.0')
+from gi.repository import Pango
+from gi.repository import Rsvg as rsvg
+
 import os
 import cairo
-import rsvg
 import sys
-import pango
-import g15driver
-import g15globals
-import g15screen
-import util.g15convert as g15convert
-import util.g15scheduler as g15scheduler
-import g15text
-import g15locale
-import util.g15cairo as g15cairo
-import util.g15svg as g15svg
-import util.g15icontools as g15icontools
+from . import g15driver
+from . import g15globals
+from . import g15screen
+from gnome15.util import g15convert as g15convert
+from gnome15.util import g15scheduler as g15scheduler
+from . import g15text
+from . import g15locale
+from gnome15.util import g15cairo as g15cairo
+from gnome15.util import g15svg as g15svg
+from gnome15.util import g15icontools as g15icontools
 import xml.sax.saxutils as saxutils
 import base64
-import dbusmenu
+from . import dbusmenu
 import logging
 import time
 logger = logging.getLogger(__name__)
 from string import Template
 from copy import deepcopy
-from cStringIO import StringIO
+from io import StringIO
+from io import BytesIO
 from lxml import etree
 from threading import RLock
-import ConfigParser
+import configparser
 
 BASE_PX=18.0
 DEBUG_SVG=False
@@ -86,7 +90,7 @@ class ThemeDefinition(object):
             else:
                 raise Exception("No theme descriptor %s" % filename)
         else:  
-            parser = ConfigParser.ConfigParser({})
+            parser = configparser.ConfigParser({})
             parser.read(filename)
             self.name = parser.get("theme", "name")
             self.description = parser.get("theme", "description")
@@ -153,7 +157,7 @@ class ScrollState(object):
         self.adjust = 0.0
         self.reversed = True
         self.step = 1.0
-        self.alignment = pango.ALIGN_LEFT
+        self.alignment = Pango.Alignment.LEFT
         self.val = 0
         self.original = 0
         
@@ -161,7 +165,7 @@ class ScrollState(object):
         self.adjust = 0.0
         self.do_transform()
         
-    def next(self):
+    def __next__(self):
         self.adjust += -self.step if self.reversed else self.step
         if self.adjust < self.range[0] and self.reversed:
             self.reversed = False
@@ -187,7 +191,7 @@ class HorizontalScrollState(ScrollState):
         for e in self.other_elements:
             e.set("x", str(int(self.val)))
             
-    def next(self):
+    def __next__(self):
         ScrollState.next(self)
                 
 class VerticalWrapScrollState(ScrollState):
@@ -832,18 +836,18 @@ class G15Page(Component):
         wrap_width = None
         for con in al:
             if con == "wrapchar":
-                wrap = pango.WRAP_CHAR    
+                wrap = Pango.WrapMode.CHAR    
             elif con == "wrapword":
-                wrap = pango.WRAP_WORD
+                wrap = Pango.WrapMode.WORD
             elif con == "wrapwordchar":
-                wrap = pango.WRAP_WORD_CHAR
+                wrap = Pango.WrapMode.WORD_CHAR
             else:
                 if align == None:
                     align = self._parse_align(con)
                 else:
                     valign = self._parse_align(con)
             
-        wrap_width = int(pango.SCALE * width) if width > 0 and height > 0 else None
+        wrap_width = int(Pango.SCALE * width) if width > 0 and height > 0 else None
             
         self.text_handler.set_attributes(text, bounds, align = align, valign = valign, \
                                          font_desc = self.font_family, font_pt_size = self.font_size, \
@@ -856,11 +860,11 @@ class G15Page(Component):
     """
     def _parse_align(self, align):
         if align == "center":
-            return pango.ALIGN_CENTER
+            return Pango.Alignment.CENTER
         elif align == "right" or align == "bottom":
-            return pango.ALIGN_RIGHT
+            return Pango.Alignment.RIGHT
         else:
-            return pango.ALIGN_LEFT
+            return Pango.Alignment.LEFT
         
     def _do_on_shown(self):
         for l in self.on_shown_listeners:
@@ -1568,7 +1572,7 @@ class G15Theme(object):
                 tpar = textel.getparent()
                 text = tpar.text
                 if text is not None and len(text) > 0 and text.startswith("_("):
-                    tpar.text = self.translation.ugettext(text[2:-1].strip())
+                    tpar.text = self.translation.gettext(text[2:-1].strip())
                 
         
     def del_namespace(self, prefix, uri):
@@ -1689,7 +1693,7 @@ class G15Theme(object):
     def draw(self, canvas, properties = {}, attributes = {}):
         if self.render != None and self.auto_dirty:
             if self.render.properties != properties or self.render.attributes != attributes or \
-               self.render.properties.values() != properties.values() or self.render.attributes.values() != attributes.values():
+               list(self.render.properties.values()) != list(properties.values()) or list(self.render.attributes.values()) != list(attributes.values()):
                 self.dirty = True
         
         if self.render == None or self.dirty:
@@ -1760,7 +1764,7 @@ class G15Theme(object):
             self.render_lock.acquire()
             if len(self.scroll_state) > 0:
                 for key in self.scroll_state:
-                    self.scroll_state[key].next()
+                    next(self.scroll_state[key])
                 return True
         finally:
             self.render_lock.release()
@@ -1778,7 +1782,7 @@ class G15Theme(object):
         root        -- root of document
         """
         if self.component:
-            for component_id in self.component.child_map.keys():
+            for component_id in list(self.component.child_map.keys()):
                 component_elements = root.xpath('//svg:*[@id=\'%s\']' % component_id,namespaces=self.nsmap)
                 if len(component_elements) > 0:
                     c = component_elements[0]
@@ -1880,10 +1884,10 @@ class G15Theme(object):
                     file_str.write(val)
                 else:
                     file_str.write("data:image/png;base64,")
-                    img_data = StringIO()
+                    img_data = BytesIO()
                     if isinstance(val, cairo.Surface):
                         val.write_to_png(img_data)
-                        file_str.write(base64.b64encode(img_data.getvalue()))
+                        file_str.write(base64.b64encode(img_data.getvalue()).decode())
                     else: 
                         file_str.write(val)
                 element.set("{http://www.w3.org/1999/xlink}href", file_str.getvalue())
@@ -2061,19 +2065,22 @@ class G15Theme(object):
             
         encoded_properties = {}
         # Encode entities in all the property values
-        for key in render.properties.keys():
+        for key in list(render.properties.keys()):
             encoded_properties[key] = saxutils.escape(str(render.properties[key]))
                 
         xml = etree.tostring(render.document)
-        t = Template(xml)
+        # need to transform xml from bytes to string in order to 
+        # use safe_substiture later on
+        t = Template(xml.decode())
         xml = t.safe_substitute(encoded_properties)       
         svg = rsvg.Handle()
         try :
-            svg.write(xml)
+            # write function needs bytes instead of string
+            svg.write(xml.encode())
             if DEBUG_SVG:
-                print "------------------------------------------------------"
-                print xml
-                print "------------------------------------------------------"
+                print("------------------------------------------------------")
+                print(xml)
+                print("------------------------------------------------------")
         except Exception as e:
             logger.debug("Could not write SVG", exc_info = e)
         try :
@@ -2156,16 +2163,16 @@ class G15Theme(object):
             text_align = css["text-align"]
         else:
             text_align = "start"
-        alignment = pango.ALIGN_LEFT
+        alignment = Pango.Alignment.LEFT
         if text_align == "end":
-            alignment =pango.ALIGN_RIGHT
+            alignment =Pango.Alignment.RIGHT
         elif text_align == "center":
-            alignment = pango.ALIGN_CENTER
+            alignment = Pango.Alignment.CENTER
         
         # Determine wrap and width to use
         if wrap:
-            width = int(pango.SCALE * text_box.clip[2])
-            wrap = pango.WRAP_WORD_CHAR
+            width = int(Pango.SCALE * text_box.clip[2])
+            wrap = Pango.WrapMode.WORD_CHAR
         else:      
             wrap = 0
             width = -1

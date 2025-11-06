@@ -14,14 +14,17 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import gnome15.util.g15uigconf as g15uigconf
-import gtk
+import gi
+gi.require_version('Gtk','3.0')
+from gi.repository import Gtk
+
+from gnome15.util import g15uigconf
 import os
 
 class G15StopwatchPreferences():
 
     def __init__(self, parent, driver, gconf_client, gconf_key):
-        widget_tree = gtk.Builder()
+        widget_tree = Gtk.Builder()
         widget_tree.add_from_file(os.path.join(os.path.dirname(__file__), "stopwatch.ui"))
 
         self.dialog = widget_tree.get_object("StopwatchDialog")

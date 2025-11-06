@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
  
 #  Gnome15 - Suite of tools for the Logitech G series keyboards and headsets
 #  Copyright (C) 2011 Brett Smith <tanktarta@blueyonder.co.uk>
@@ -16,9 +16,12 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import gi
+from gi.repository import GLib
+from gi.repository import GObject
+
 import sys
 import os
-import glib
 import time
 
 # Allow running from local path
@@ -27,13 +30,11 @@ if os.path.exists(path):
     sys.path.insert(0, path)
 
 # Logging
-import gnome15.g15logging as g15logging
+from gnome15 import g15logging
 logger = g15logging.get_root_logger()
 
 #
-import gobject
-import gnome15.util.g15pythonlang as g15pythonlang
-gobject.threads_init()
+from gnome15.util import g15pythonlang
 
 # DBUS - Use to check current desktop service status or stop it
 import dbus
@@ -50,7 +51,8 @@ def check_service_status(session_dbus):
         session_bus.get_object('org.gnome15.Gnome15', '/org/gnome15/Service').GetServerInformation()
         return True
     except Exception as e:
-        logger.debug("Did not found enabled service", exc_info = e)
+        #logger.debug("Did not found enabled service", exc_info = e)
+        logger.debug("Did not found enabled service")
         return False
 
 def start_service(options): 
@@ -64,14 +66,15 @@ def start_service(options):
 
     # Start the loop    
     try :
-        import gnome15.g15service as g15service
+        from gnome15 import g15service
         service = g15service.G15Service(None, no_trap=options.no_trap)
         service.exit_on_no_devices = options.exit_on_no_devices
         g15service.logger.setLevel(logger.level) 
         service.start_loop()
     except dbus.exceptions.NameExistsException as e:
-        logger.debug("DBus service already exist", exc_info = e)
-        print "Gnome15 desktop service is already running"
+        #logger.debug("DBus service already exist", exc_info = e)
+        logger.debug("DBus service already exist")
+        print("Gnome15 desktop service is already running")
         sys.exit(1)
     
 if __name__ == "__main__":
@@ -96,7 +99,7 @@ if __name__ == "__main__":
         session_bus = dbus.SessionBus()
         if not check_service_status(session_bus):
             if args[0] == "stop":
-                print "Gnome15 desktop service is not running"
+                print("Gnome15 desktop service is not running")
         else:            
             session_bus.get_object('org.gnome15.Gnome15', '/org/gnome15/Service').Stop()
             while check_service_status(session_bus):
@@ -106,7 +109,7 @@ if __name__ == "__main__":
     if len(args) == 0 or ( len(args) == 1 and ( args[0] == "start" or args[0] == "restart" ) ):
         session_bus = dbus.SessionBus()
         if check_service_status(session_bus):
-            print "Gnome15 desktop service already running"
+            print("Gnome15 desktop service already running")
         else:
             if options.foreground or ( not options.foreground and os.fork() == 0 ):
                 start_service(options)

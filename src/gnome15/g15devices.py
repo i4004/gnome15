@@ -15,13 +15,13 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  
 import gnome15.g15locale as g15locale
-_ = g15locale.get_translation("gnome15").ugettext
+_ = g15locale.get_translation("gnome15").gettext
 
 import usb
-import g15driver
-import g15actions
-import util.g15pythonlang as g15pythonlang
-import g15drivermanager
+from . import g15driver
+from . import g15actions
+from gnome15.util import g15pythonlang as g15pythonlang
+from . import g15drivermanager
 
 # Logging
 import logging
@@ -302,7 +302,7 @@ def are_keys_reserved(model_id, keys):
     device_info = get_device_info(model_id)
     if device_info is None:
         raise Exception("No device with ID of %s"  % model_id)
-    for action_binding in device_info.action_keys.values():
+    for action_binding in list(device_info.action_keys.values()):
         if sorted(keys) == sorted(action_binding.keys):
             return True
     return False
@@ -426,7 +426,7 @@ have_udev = False
 device_added_listeners = []
 device_removed_listeners = []
     
-def __device_added(observer, device):
+def __device_added(device):
     uevent_attr = device.attributes.get('uevent', None)
     if uevent_attr != None:
         uevent = g15pythonlang.parse_as_properties(uevent_attr)
@@ -450,7 +450,7 @@ def __device_added(observer, device):
                                 break
                     break
                         
-def __device_removed(observer, device):
+def __device_removed(device):
     current_devices = list(__cached_devices)
     new_devices = find_all_devices(do_cache = False)
     found = False
@@ -467,12 +467,17 @@ def __device_removed(observer, device):
             break
 
 try:
-    import pyudev.glib
-    __context = pyudev.Context()
-    __monitor = pyudev.Monitor.from_netlink(__context)
-    __observer = pyudev.glib.GUDevMonitorObserver(__monitor)
-    __observer.connect('device-added', __device_added)
-    __observer.connect('device-removed', __device_removed)
+    from pyudev import Context, Monitor, MonitorObserver
+    __context = Context()
+    __monitor = Monitor.from_netlink(__context)
+    def handle_device_event(device=None):
+        if device.action == "add":
+           __device_added(device)
+
+        if action == "removed":
+           __device_removed(device) 
+
+    __observer = MonitorObserver(__monitor, callback=handle_device_event, name='monitor-observer')
     find_all_devices()
     have_udev = True
     __monitor.start()
@@ -481,5 +486,5 @@ except Exception as e:
     
 if __name__ == "__main__":
     for device in find_all_devices():
-        print str(device)
+        print(str(device))
         

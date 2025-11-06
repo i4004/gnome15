@@ -14,17 +14,17 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  
-import gnome15.g15locale as g15locale
-_ = g15locale.get_translation("profiles", modfile = __file__).ugettext
+from gnome15 import g15locale
+_ = g15locale.get_translation("profiles", modfile = __file__).gettext
 
-import gnome15.g15driver as g15driver
-import gnome15.g15theme as g15theme
-import gnome15.g15plugin as g15plugin
-import gnome15.g15devices as g15devices
-import gnome15.g15actions as g15actions
-import gnome15.util.g15scheduler as g15scheduler
-import gnome15.util.g15pythonlang as g15pythonlang
-import gnome15.util.g15icontools as g15icontools
+from gnome15 import g15driver
+from gnome15 import g15theme
+from gnome15 import g15plugin
+from gnome15 import g15devices
+from gnome15 import g15actions
+from gnome15.util import g15scheduler
+from gnome15.util import g15pythonlang
+from gnome15.util import g15icontools
 import logging
 import os
 import re

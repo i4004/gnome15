@@ -14,30 +14,34 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  
-import gnome15.g15locale as g15locale
-_ = g15locale.get_translation("videoplayer", modfile = __file__).ugettext
+from gnome15 import g15locale
+_ = g15locale.get_translation("videoplayer", modfile = __file__).gettext
 
-import gnome15.g15driver as g15driver
-import gnome15.util.g15convert as g15convert
-import gnome15.util.g15scheduler as g15scheduler
-import gnome15.util.g15gconf as g15gconf
-import gnome15.util.g15os as g15os
-import gnome15.util.g15cairo as g15cairo
-import gnome15.util.g15icontools as g15icontools
-import gnome15.g15theme as g15theme
-import gnome15.g15plugin as g15plugin
-import gnome15.g15screen as g15screen
-import gnome15.g15devices as g15devices
-import gnome15.g15actions as g15actions
-import gnome15.lcdsink as lcdsink
-import gnome15.g15globals as g15globals
-import gtk
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk
+from gi.repository import GObject
+from gi.repository import Gio
+gi.require_version('Gst', '1.0')
+from gi.repository import Gst
+
+from gnome15 import g15driver
+from gnome15.util import g15convert
+from gnome15.util import g15scheduler
+from gnome15.util import g15gconf
+from gnome15.util import g15os
+from gnome15.util import g15cairo
+from gnome15.util import g15icontools
+from gnome15 import g15theme 
+from gnome15 import g15plugin
+from gnome15 import g15screen
+from gnome15 import g15devices
+from gnome15 import g15actions
+from gnome15 import lcdsink
+from gnome15 import g15globals
 import os
-import gst
 import cairo
 import array
-import gobject
-import gio
 import mimetypes
 import dbus
 
@@ -50,17 +54,19 @@ logger = logging.getLogger(__name__)
 session_bus = dbus.SessionBus()
 can_grab_media_keys = False
 try:
-    dbus.Interface(session_bus.get_object('org.g.SettingsDaemon',
-                        '/org/gnome/SettingsDaemon'), 'org.gnome.SettingsDaemon')
+    dbus.Interface(session_bus.get_object('org.gnome.SettingsDaemon.MediaKeys',
+                            '/org/gnome/SettingsDaemon/MediaKeys'),
+                            'org.gnome.SettingsDaemon.MediaKeys')
     can_grab_media_keys = True
+
 except dbus.DBusException as e:
     logger.debug("Error when trying to check if media keys could be grabbed. Trying alternative.",
                  exc_info = e)
     try:
         dbus.Interface(session_bus.get_object('org.gnome.SettingsDaemon',
-                            '/org/gnome/SettingsDaemon/MediaKeys'),
-                            'org.gnome.SettingsDaemon.MediaKeys')
+                            '/org/gnome/SettingsDaemon'), 'org.gnome.SettingsDaemon')
         can_grab_media_keys = True
+
     except dbus.DBusException as e:
         logger.debug("Error when trying to check if media keys could be grabbed.", exc_info = e)
         pass
@@ -173,7 +179,7 @@ class MountMenuItem(g15theme.MenuItem):
         item_properties = g15theme.MenuItem.get_theme_properties(self)
         item_properties["item_name"] = self._mount.get_name()
         icon = self._mount.get_icon()        
-        icon_names = [ icon.get_file().get_path() ] if isinstance(icon, gio.FileIcon) else icon.get_names() 
+        icon_names = [ icon.get_file().get_path() ] if isinstance(icon, Gio.FileIcon) else icon.get_names() 
         icon_names += "gnome-dev-harddisk"
         item_properties["item_icon"] = g15icontools.get_icon_path(icon_names)
         return item_properties
@@ -258,7 +264,7 @@ class G15MediaPlayerPage(g15theme.G15Page):
         self._setup_gstreamer()
         self.screen.key_handler.action_listeners.append(self) 
         def on_delete():
-            self._pipeline.set_state(gst.STATE_NULL)
+            self._pipeline.set_state(Gst.State.NULL)
             self.screen.key_handler.action_listeners.remove(self)
             self.screen.painters.remove(self.background_painter)
             self._plugin.show_menu()
@@ -280,7 +286,7 @@ class G15MediaPlayerPage(g15theme.G15Page):
         self._video_sink.connect('thumbnail', self._redraw_cb)
         
         # Now create the actual pipeline
-        self._pipeline = gst.Pipeline("mypipeline")
+        self._pipeline = Gst.Pipeline("mypipeline")
         logger.info("Building pipeline")
         self._source.build_pipeline(self._video_src, self._video_sink, self._pipeline)
         logger.info("Built pipeline")
@@ -289,38 +295,38 @@ class G15MediaPlayerPage(g15theme.G15Page):
     def action_performed(self, binding):
         # The custom actions which can be activated outside of visible page
         if binding.action == PLAY_TRACK:
-            gobject.idle_add(self._play)
+            GObject.idle_add(self._play)
             return True
         elif binding.action == NEXT_TRACK:
-            gobject.idle_add(self._fwd)
+            GObject.idle_add(self._fwd)
             return True
         elif binding.action == PREV_TRACK:
-            gobject.idle_add(self._rew)
+            GObject.idle_add(self._rew)
             return True
         elif binding.action == STOP_TRACK:
-            gobject.idle_add(self._stop)
+            GObject.idle_add(self._stop)
             return True
         
         if self.is_visible():
             if can_grab_media_keys:
                 # Default when media keys are available
                 if binding.action == g15driver.VIEW:
-                    gobject.idle_add(self._change_aspect)
+                    GObject.idle_add(self._change_aspect)
                     return True
             else:
                 # Default when media keys are not available
                 if binding.action == g15driver.SELECT:
-                    gobject.idle_add(self._play)
+                    GObject.idle_add(self._play)
                 elif ( binding.action == g15driver.PREVIOUS_PAGE and self._screen.device.model_id == g15driver.MODEL_G19 ) or \
                      ( binding.action == g15driver.PREVIOUS_SELECTION and self._screen.device.model_id != g15driver.MODEL_G19 ):
-                    gobject.idle_add(self._rew)
+                    GObject.idle_add(self._rew)
                 elif ( binding.action == g15driver.NEXT_PAGE and self._screen.device.model_id == g15driver.MODEL_G19 ) or \
                      ( binding.action == g15driver.NEXT_SELECTION and self._screen.device.model_id != g15driver.MODEL_G19 ):
-                    gobject.idle_add(self._fwd)
+                    GObject.idle_add(self._fwd)
                 elif binding.action == g15driver.VIEW:
-                    gobject.idle_add(self._change_aspect)
+                    GObject.idle_add(self._change_aspect)
                 elif binding.action == g15driver.CLEAR:
-                    gobject.idle_add(self._stop)
+                    GObject.idle_add(self._stop)
                 else:
                     return False
                 return True
@@ -380,18 +386,18 @@ class G15MediaPlayerPage(g15theme.G15Page):
         """
         t = message.type
         logger.debug("Message. %s", message)
-        if t == gst.MESSAGE_EOS:
-            self._pipeline.set_state(gst.STATE_NULL)
+        if t == Gst.Message.EOS:
+            self._pipeline.set_state(Gst.State.NULL)
             self._show_sidebar()
-        elif t == gst.MESSAGE_ERROR:
+        elif t == Gst.Message.ERROR:
             err, debug = message.parse_error()
-            self._pipeline.set_state(gst.STATE_NULL)
+            self._pipeline.set_state(Gst.State.NULL)
             self._show_sidebar()
                 
     def _redraw_cb(self, unused_thsink, timestamp):
         if not self._plugin.active:
             return
-        buf = self._video_sink.data
+        buf = self._video_sink.extract_dup(0, self._video_sink.get_size())
         width = self._video_sink.width
         height = self._video_sink.height
         b = array.array("b")
@@ -416,8 +422,8 @@ class G15MediaPlayerPage(g15theme.G15Page):
     Private
     '''
     def _get_track_progress(self):
-        raw_pos = self._pipeline.query_position(gst.FORMAT_TIME, None)[0]
-        raw_dur = self._pipeline.query_duration(gst.FORMAT_TIME, None)[0]
+        raw_pos = self._pipeline.query_position(Gst.Format.TIME, None)[0]
+        raw_dur = self._pipeline.query_duration(Gst.Format.TIME, None)[0]
         pos = self._convert_time(int(raw_pos))
         if raw_dur < 0:
             return 100, pos, (0,0,0)
@@ -490,36 +496,36 @@ class G15MediaPlayerPage(g15theme.G15Page):
             self._hide_sidebar(3.0)
     
     def _rew(self):
-        pos_int = self._pipeline.query_position(gst.FORMAT_TIME, None)[0]
+        pos_int = self._pipeline.query_position(Gst.Format.TIME, None)[0]
         seek_ns = pos_int - (10 * 1000000000)
-        self._pipeline.seek_simple(gst.FORMAT_TIME, gst.SEEK_FLAG_FLUSH, seek_ns)
+        self._pipeline.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH, seek_ns)
         if self._sidebar_offset != 0:
             self._show_sidebar()
             self._hide_sidebar(3.0)
         
     def _fwd(self):
-        pos_int = self._pipeline.query_position(gst.FORMAT_TIME, None)[0]
+        pos_int = self._pipeline.query_position(Gst.Format.TIME, None)[0]
         seek_ns = pos_int + (10 * 1000000000)
-        self._pipeline.seek_simple(gst.FORMAT_TIME, gst.SEEK_FLAG_FLUSH, seek_ns)
+        self._pipeline.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH, seek_ns)
         if self._sidebar_offset != 0:
             self._show_sidebar()
             self._hide_sidebar(3.0)
     
     def _is_paused(self):
-        return gst.STATE_PAUSED == self._pipeline.get_state()[1]
+        return Gst.State.PAUSED == self._pipeline.get_state()[1]
     
     def _is_playing(self):
-        return gst.STATE_PLAYING == self._pipeline.get_state()[1]
+        return Gst.State.PLAYING == self._pipeline.get_state()[1]
     
     def _play(self):
         self._lock.acquire()
         try:   
             if self._is_playing():
-                self._pipeline.set_state(gst.STATE_PAUSED)
+                self._pipeline.set_state(Gst.State.PAUSED)
                 self._cancel_hide()
                 self._show_sidebar()
             else:
-                self._pipeline.set_state(gst.STATE_PLAYING)
+                self._pipeline.set_state(Gst.State.PLAYING)
                 self._hide_sidebar(3.0)
         finally:
             self._lock.release()
@@ -531,7 +537,7 @@ class G15MediaPlayerPage(g15theme.G15Page):
     def _stop(self):
         self._lock.acquire()
         try:
-            self._pipeline.set_state(gst.STATE_READY)
+            self._pipeline.set_state(Gst.State.READY)
             self.delete()
             self.screen.raise_page(self._plugin.page)
         finally:
@@ -570,51 +576,54 @@ class G15VideoFileSource(G15MediaSource):
         self._path = path
         
     def create_source(self):
-        src = gst.element_factory_make("filesrc", "video-source")
+        src = Gst.ElementFactory.make("filesrc", "video-source")
         src.set_property("location", self._path)
         return src
     
     def build_pipeline(self, video_src, video_sink, pipeline):
         
         # Create the pipeline elements
-        self._decodebin = gst.element_factory_make("decodebin2")
-        self._autoconvert = gst.element_factory_make("autoconvert")
+        self._decodebin = Gst.ElementFactory.make("decodebin", None)
+        self._autoconvert = Gst.ElementFactory.make("autoconvert", None)
         
         # As a precaution add videio capability filter
         # in the video processing pipeline.
-        videocap = gst.Caps("video/x-raw-yuv")
+        videocap = Gst.Caps("video/x-raw")
         
-        self._filter = gst.element_factory_make("capsfilter")
+        self._filter = Gst.ElementFactory.make("capsfilter", None)
         self._filter.set_property("caps", videocap)
         
         # Converts the video from one colorspace to another
-        self._color_space = gst.element_factory_make("ffmpegcolorspace")
+        self._color_space = Gst.ElementFactory.make("videoconvert", None)
 
-        self._audioconvert = gst.element_factory_make("audioconvert")
-        self._audiosink = gst.element_factory_make("autoaudiosink")
+        self._audioconvert = Gst.ElementFactory.make("audioconvert", None)
+        self._audiosink = Gst.ElementFactory.make("autoaudiosink", None)
         
         # Queues
-        self._queue1 = gst.element_factory_make("queue")
-        self._queue2 = gst.element_factory_make("queue")
+        self._queue1 = Gst.ElementFactory.make("queue", None)
+        self._queue2 = Gst.ElementFactory.make("queue", None)
     
-        pipeline.add(video_src,
-                     self._decodebin,
-                     self._autoconvert,
-                     self._audioconvert,
-                     self._queue1,
-                     self._queue2,
-                     self._filter,
-                     self._color_space,
-                     self._audiosink,
-                     video_sink)
+        pipeline.add(video_src)
+        pipeline.add(self._decodebin)
+        pipeline.add(self._autoconvert)
+        pipeline.add(self._audioconvert)
+        pipeline.add(self._queue1)
+        pipeline.add(self._queue2)
+        pipeline.add(self._filter)
+        pipeline.add(self._color_space)
+        pipeline.add(self._audiosink)
+        pipeline.add(video_sink)
         
         # Link everything we can link now
-        gst.element_link_many(video_src, self._decodebin)
-        gst.element_link_many(self._queue1, self._autoconvert,
-                              self._filter, self._color_space,
-                              video_sink)
-        gst.element_link_many(self._queue2, self._audioconvert,
-                              self._audiosink)
+        video_src.link(self._decodebin)
+
+        self._queue1.link(self._autoconvert)
+        self._autoconvert.link(self._filter)
+        self._filter.link(self._color_space)
+        self._color_space(video_sink)
+
+        self._queue2.link(self._audioconvert)
+        self._audioconvert.link(self._audiosink)
         
     def connect_signals(self):
         if not self._decodebin is None:
@@ -622,11 +631,11 @@ class G15VideoFileSource(G15MediaSource):
 
     def _decodebin_pad_added(self, decodebin, pad):
         compatible_pad = None
-        caps = pad.get_caps()
-        name = caps[0].get_name()
-        if name[:5] == 'video':
+        caps = pad.query_caps(None)
+        name = caps.to_string()
+        if name.startswith == 'video/':
             compatible_pad = self._queue1.get_compatible_pad(pad, caps)
-        elif name[:5] == 'audio':
+        elif name.startswith == 'audio/':
             compatible_pad = self._queue2.get_compatible_pad(pad, caps)
 
         if compatible_pad:
@@ -646,35 +655,39 @@ class G15AudioFileSource(G15MediaSource):
         self._visualisation = visualisation
         
     def create_source(self):
-        src = gst.element_factory_make("filesrc", "video-source")
+        src = Gst.ElementFactory.make("filesrc", "video-source")
         src.set_property("location", self._path)
         return src
     
     def build_pipeline(self, video_src, video_sink, pipeline):
-        self._decodebin = gst.element_factory_make("decodebin2")
-        self._visualiser = gst.element_factory_make(self._visualisation)
-        self._color_space = gst.element_factory_make("ffmpegcolorspace")
-        self._audioconvert = gst.element_factory_make("audioconvert")
-        self._audiosink = gst.element_factory_make("autoaudiosink")
-        self._tee = gst.element_factory_make('tee', "tee")
-        self._queue1 = gst.element_factory_make("queue")
-        self._queue2 = gst.element_factory_make("queue")
-        pipeline.add(video_src,
-                     self._decodebin,
-                     self._audioconvert,
-                     self._tee,
-                     self._queue1,
-                     self._audiosink,
-                     self._queue2,
-                     self._visualiser,
-                     self._color_space,
-                     video_sink)
-        gst.element_link_many(video_src, self._decodebin)
-        gst.element_link_many(self._audioconvert, self._tee)
+        self._decodebin = Gst.ElementFactory.make("decodebin", None)
+        self._visualiser = Gst.ElementFactory.make(self._visualisation, None)
+        self._color_space = Gst.ElementFactory.make("videoconvert", None)
+        self._audioconvert = Gst.ElementFactory.make("audioconvert", None)
+        self._audiosink = Gst.ElementFactory.make("autoaudiosink", None)
+        self._tee = Gst.ElementFactory.make('tee', "tee")
+        self._queue1 = Gst.ElementFactory.make("queue", None)
+        self._queue2 = Gst.ElementFactory.make("queue", None)
+        pipeline.add(video_src)
+        pipeline.add(self._decodebin)
+        pipeline.add(self._audioconvert)
+        pipeline.add(self._tee)
+        pipeline.add(self._queue1)
+        pipeline.add(self._audiosink)
+        pipeline.add(self._queue2)
+        pipeline.add(self._visualiser)
+        pipeline.add(self._color_space)
+        pipeline.add(video_sink)
+        video_src.link(self._decodebin)
+
+        self._audioconvert.link(self._tee)
         self._tee.link(self._queue1)
         self._queue1.link(self._audiosink)
         self._tee.link(self._queue2)
-        gst.element_link_many(self._queue2, self._visualiser,self._color_space, video_sink)
+
+        self._queue2.link(self._visualiser)
+        self._visualiser.link(self._color_space)
+        self._color_space.link(video_sink)
         
     def connect_signals(self):
         if not self._decodebin is None:
@@ -696,20 +709,24 @@ class G15PulseSource(G15MediaSource):
         self._visualisation = visualisation
         
     def create_source(self):
-        src = gst.element_factory_make("pulsesrc", "video-source")
+        src = Gst.ElementFactory.make("pulsesrc", "video-source")
         src.set_property("device", self.name)
         return src
     
     def build_pipeline(self, video_src, video_sink, pipeline):
-        self._visualiser = gst.element_factory_make(self._visualisation)
-        self._color_space = gst.element_factory_make("ffmpegcolorspace")
-        self._audioconvert = gst.element_factory_make("audioconvert")
-        pipeline.add(video_src,
-                     self._audioconvert,
-                     self._visualiser,
-                     self._color_space,
-                     video_sink)
-        gst.element_link_many(video_src, self._audioconvert, self._visualiser,self._color_space, video_sink)
+        self._visualiser = Gst.ElementFactory.make(self._visualisation, None)
+        self._color_space = Gst.ElementFactory.make("videoconvert", None)
+        self._audioconvert = Gst.ElementFactory.make("audioconvert", None)
+        pipeline.add(video_src)
+        pipeline.add(self._audioconvert)
+        pipeline.add(self._visualiser)
+        pipeline.add(self._color_space)
+        pipeline.add(video_sink)
+
+        video_src.link(self._audioconvert)
+        self._audioconvert.link(self._visualiser)
+        self._visualiser.link(self._color_space)
+        self._color_space.link(video_sink)
     
 class G15RemovableSource(G15VideoFileSource):
     
@@ -722,7 +739,7 @@ class G15RemovableSource(G15VideoFileSource):
         self._mount = mount
         
     def create_source(self):
-        src = gst.element_factory_make("dvdreadsrc", "video-source")
+        src = Gst.ElementFactory.make("dvdreadsrc", "video-source")
         return src
         
 class G15WebCamSource(G15MediaSource):
@@ -735,7 +752,7 @@ class G15WebCamSource(G15MediaSource):
         G15MediaSource.__init__(self, name)
         
     def create_source(self):
-        src = gst.element_factory_make("v4l2src", "video-source")
+        src = Gst.ElementFactory.make("v4l2src", "video-source")
         device_path = "/dev/%s" % self.name
         logger.info("Opening Video device %s", device_path)
         src.set_property("device", device_path)
@@ -743,17 +760,17 @@ class G15WebCamSource(G15MediaSource):
     
     def build_pipeline(self, video_src, video_sink, pipeline):
         # Create the pipeline elements
-        self._decodebin = gst.element_factory_make("decodebin2")
-        self._autoconvert = gst.element_factory_make("autoconvert")
+        self._decodebin = Gst.ElementFactory.make("decodebin", None)
+        self._autoconvert = Gst.ElementFactory.make("autoconvert", None)
         
-        videocap = gst.Caps("video/x-raw-yuv")
-        self._filter = gst.element_factory_make("capsfilter")
+        videocap = Gst.Caps("video/x-raw")
+        self._filter = Gst.ElementFactory.make("capsfilter", None)
         self._filter.set_property("caps", videocap)
         
         # Converts the video from one colorspace to another
-        self._color_space = gst.element_factory_make("ffmpegcolorspace")
+        self._color_space = Gst.ElementFactory.make("videoconvert", None)
         
-        self._queue1 = gst.element_factory_make("queue")
+        self._queue1 = Gst.ElementFactory.make("queue", None)
         
         pipeline.add(video_src,
                      self._decodebin,
@@ -764,10 +781,11 @@ class G15WebCamSource(G15MediaSource):
                      video_sink)
         
         # Link everything we can link now
-        gst.element_link_many(video_src, self._decodebin)
-        gst.element_link_many(self._queue1, self._autoconvert,
-                              self._filter, self._color_space,
-                              video_sink)
+        video_src.link(self._decodebin)
+        self._queue1.link(self._autoconvert)
+        self._autoconvert.link(self._filter)
+        self._filter.link(self._color_space)
+        self._color_space.link(video_sink)
         
     def connect_signals(self):
         if not self._decodebin is None:
@@ -775,9 +793,8 @@ class G15WebCamSource(G15MediaSource):
 
     def _decodebin_pad_added(self, decodebin, pad):
         compatible_pad = None
-        caps = pad.get_caps()
-        name = caps[0].get_name()
-        if name[:5] == 'video':
+        caps = pad.query_caps()
+        if caps.to_string.startswith('video/'):
             compatible_pad = self._queue1.get_compatible_pad(pad, caps)
 
         if compatible_pad:
@@ -819,11 +836,11 @@ class G15MediaPlayer(g15plugin.G15MenuPlugin):
                 
         # Video File
         def activate_video_file():
-            gobject.idle_add(self._open_video_file)
+            GObject.idle_add(self._open_video_file)
         items.append(g15theme.MenuItem("video-file", True, _("Open Audio/Video File"), activate = activate_video_file, icon = g15icontools.get_icon_path("folder")))
         
         # DVD / Mounts
-        self.volume_monitor = gio.VolumeMonitor()
+        self.volume_monitor = Gio.VolumeMonitor.get()
         self.volume_monitor_signals.append(self.volume_monitor.connect("mount_added", self._on_mount_added))
         self.volume_monitor_signals.append(self.volume_monitor.connect("mount_removed", self._on_mount_removed))
         removable_media_items = []
@@ -869,7 +886,7 @@ class G15MediaPlayer(g15plugin.G15MenuPlugin):
                   "wavescope", \
                   "monoscope"]:
             try:
-                gst.element_factory_make(c)
+                Gst.ElementFactory.make(c, None)
                 items.append(G15VisualisationMenuItem(c, self))
             except Exception as e:
                 logger.debug("Error creating visualizations", exc_info = e)
@@ -961,7 +978,7 @@ class G15MediaPlayer(g15plugin.G15MenuPlugin):
             self._grabbed_keys = None
          
     def _open_source(self, source):
-        gobject.idle_add(self._do_open_source, source)
+        GObject.idle_add(self._do_open_source, source)
         
     def _do_open_source(self, source):
         if can_grab_media_keys:
@@ -970,27 +987,27 @@ class G15MediaPlayer(g15plugin.G15MenuPlugin):
         self.player_pages.append(self._player_page)
         self.screen.add_page(self._player_page)
         self.screen.redraw(self._player_page)
-        gobject.idle_add(self._player_page._play)
+        GObject.idle_add(self._player_page._play)
              
     def _reload_menu(self):
         self.load_menu_items()
         self.screen.redraw(self.page)
         
     def _open_file(self):
-        dialog = gtk.FileChooserDialog("Open..",
+        dialog = Gtk.FileChooserDialog("Open..",
                                None,
-                               gtk.FILE_CHOOSER_ACTION_OPEN,
-                               (gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
-                                gtk.STOCK_OPEN, gtk.RESPONSE_OK))
-        dialog.set_default_response(gtk.RESPONSE_OK)
+                               Gtk.FILE_CHOOSER_ACTION_OPEN,
+                               (Gtk.STOCK_CANCEL, Gtk.RESPONSE_CANCEL,
+                                Gtk.STOCK_OPEN, Gtk.RESPONSE_OK))
+        dialog.set_default_response(Gtk.RESPONSE_OK)
         
-        filter = gtk.FileFilter()
+        filter = Gtk.FileFilter()
         filter.set_name(_("All files"))
         filter.add_pattern("*")
         dialog.add_filter(filter)
 
         # Video        
-        filter = gtk.FileFilter()
+        filter = Gtk.FileFilter()
         filter.set_name(_("Video Files"))
         
         filter.add_mime_type("application/ogg")
@@ -1023,7 +1040,7 @@ class G15MediaPlayer(g15plugin.G15MenuPlugin):
         dialog.add_filter(filter)
         
         # Audio        
-        filter = gtk.FileFilter()
+        filter = Gtk.FileFilter()
         filter.set_name(_("Audio Files"))
         
         filter.add_mime_type("audio/ogg")
@@ -1068,10 +1085,10 @@ class G15MediaPlayer(g15plugin.G15MenuPlugin):
         dialog.add_filter(filter)
         
         response = dialog.run()
-        while gtk.events_pending():
-            gtk.main_iteration(False) 
+        while Gtk.events_pending():
+            Gtk.main_iteration(False) 
         try:
-            if response == gtk.RESPONSE_OK:
+            if response == Gtk.RESPONSE_OK:
                 return dialog.get_filename()
         finally:
             dialog.destroy()

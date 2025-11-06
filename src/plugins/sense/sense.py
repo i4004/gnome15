@@ -16,20 +16,20 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  
-import gnome15.g15locale as g15locale
-_ = g15locale.get_translation("sensors", modfile = __file__).ugettext
+from gnome15 import g15locale
+_ = g15locale.get_translation("sensors", modfile = __file__).gettext
 
-import gnome15.g15driver as g15driver
-import gnome15.g15plugin as g15plugin
-import gnome15.g15theme as g15theme
-import gnome15.util.g15gconf as g15gconf
-import gnome15.util.g15svg as g15svg
+from gnome15 import g15driver
+from gnome15 import g15plugin
+from gnome15 import g15theme
+from gnome15.util import g15gconf
+from gnome15.util import g15svg
 import os.path
 import dbus
 import sensors
-import gtk
-import gconf
-import gobject
+from gi.repository import Gtk
+from gi.repository import GConf
+from gi.repository import GObject
 
 import subprocess
 from threading import Lock
@@ -112,7 +112,7 @@ class G15SensorsPreferences():
         self._gconf_client = gconf_client
         self._gconf_key = gconf_key
         
-        widget_tree = gtk.Builder()
+        widget_tree = Gtk.Builder()
         widget_tree.add_from_file(os.path.join(os.path.dirname(__file__), "sense.ui"))
         
         # Feeds
@@ -147,14 +147,14 @@ class G15SensorsPreferences():
             if self.sensor_model[row_index][2] != value:
                 self.sensor_model.set_value(self.sensor_model.get_iter(row_index), 2, value)
                 sensor_name = self.sensor_model[row_index][0]
-                self._gconf_client.set_string("%s/sensors/%s/label" % (self._gconf_key, gconf.escape_key(sensor_name, len(sensor_name))), value)
+                self._gconf_client.set_string("%s/sensors/%s/label" % (self._gconf_key, GConf.escape_key(sensor_name, len(sensor_name))), value)
             
     def sensor_toggled(self, widget, row_index):
         row_index = int(row_index)
         now_active = not widget.get_active()
         self.sensor_model.set_value(self.sensor_model.get_iter(row_index), 1, now_active)
         sensor_name = self.sensor_model[row_index][0]
-        self._gconf_client.set_bool("%s/sensors/%s/enabled" % (self._gconf_key, gconf.escape_key(sensor_name, len(sensor_name))), now_active)
+        self._gconf_client.set_bool("%s/sensors/%s/enabled" % (self._gconf_key, GConf.escape_key(sensor_name, len(sensor_name))), now_active)
         
     def reload_model(self):
         self.sensor_model.clear() 
@@ -162,7 +162,7 @@ class G15SensorsPreferences():
         for source in ss:
             sa  = source.get_sensors()
             for sensor in sa:
-                sense_key = "%s/sensors/%s" % (self._gconf_key, gconf.escape_key(sensor.name, len(sensor.name)))
+                sense_key = "%s/sensors/%s" % (self._gconf_key, GConf.escape_key(sensor.name, len(sensor.name)))
                 if sensor.sense_type in TYPE_NAMES:
                     self.sensor_model.append([ sensor.name, g15gconf.get_bool_or_default(self._gconf_client, "%s/enabled" % (sense_key), True),
                                               g15gconf.get_string_or_default(self._gconf_client, "%s/label" % (sense_key), sensor.name), TYPE_NAMES[sensor.sense_type] ])
@@ -239,7 +239,7 @@ class UDisksSource():
                         sensor.value = 0
 
                 self.sensors[sensor.name] = sensor
-        return self.sensors.values()
+        return list(self.sensors.values())
     
     def is_valid(self):
         if self.udisks == None:
@@ -309,7 +309,7 @@ class UDisks2Source():
                 sensor.value = 0
             self.sensors[sensor.name] = sensor
 
-        return self.sensors.values()
+        return list(self.sensors.values())
 
     def is_valid(self):
         if self.udisks == None:
@@ -425,7 +425,7 @@ class G15Sensors(g15plugin.G15RefreshingPlugin):
         self._menu = None
         
     def activate(self):
-        gobject.idle_add(self._do_activate)
+        GObject.idle_add(self._do_activate)
         
     def _do_activate(self):  
         self._sensors_changed_handle = self.gconf_client.notify_add(self.gconf_key + "/sensors", self._sensors_changed)
@@ -440,7 +440,7 @@ class G15Sensors(g15plugin.G15RefreshingPlugin):
         enabled_sensors = []
         for c in self.sensor_sources:
             for s in c.get_sensors():                
-                sense_key = "%s/sensors/%s" % (self.gconf_key, gconf.escape_key(s.name, len(s.name)))
+                sense_key = "%s/sensors/%s" % (self.gconf_key, GConf.escape_key(s.name, len(s.name)))
                 if g15gconf.get_bool_or_default(self.gconf_client, "%s/enabled" % (sense_key), True):
                     enabled_sensors.append(s)
                     
@@ -461,7 +461,7 @@ class G15Sensors(g15plugin.G15RefreshingPlugin):
             i = 0
             for s in enabled_sensors:                
                 if s.sense_type in TYPE_NAMES:
-                    sense_key = "%s/sensors/%s" % (self.gconf_key, gconf.escape_key(s.name, len(s.name)))
+                    sense_key = "%s/sensors/%s" % (self.gconf_key, GConf.escape_key(s.name, len(s.name)))
                     sense_label = g15gconf.get_string_or_default(self.gconf_client, "%s/label" % (sense_key), s.name)
                     menu_item = SensorMenuItem("menuitem-%d" % i, s, sense_label)
                     self.sensor_dict[s.name] = menu_item
@@ -490,7 +490,7 @@ class G15Sensors(g15plugin.G15RefreshingPlugin):
     ''' Private
     '''
     
-    def _sensors_changed(self, client, connection_id, entry, args):        
+    def _sensors_changed(self, client, connection_id, entry, *args):        
         self.page.remove_all_children()
         self.populate_page()
         self.refresh()

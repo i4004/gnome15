@@ -14,28 +14,32 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  
-import gnome15.g15locale as g15locale
-_ = g15locale.get_translation("cairo-clock", modfile = __file__).ugettext
+from gnome15 import g15locale
+_ = g15locale.get_translation("cairo-clock", modfile = __file__).gettext
 
-import gnome15.g15screen as g15screen 
-import gnome15.g15theme as g15theme 
-import gnome15.util.g15uigconf as g15uigconf
-import gnome15.util.g15gconf as g15gconf
-import gnome15.util.g15cairo as g15cairo
-import gnome15.util.g15pythonlang as g15pythonlang
-import gnome15.g15driver as g15driver 
-import gnome15.g15globals as g15globals
-import gnome15.g15text as g15text
-import gnome15.g15plugin as g15plugin
+import gi
+gi.require_version('Rsvg', '2.0')
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk
+from gi.repository import Pango
+from gi.repository import Rsvg 
+
+from gnome15 import g15screen
+from gnome15 import g15theme
+from gnome15.util import g15uigconf
+from gnome15.util import g15gconf
+from gnome15.util import g15cairo
+from gnome15.util import g15pythonlang
+from gnome15 import g15driver
+from gnome15 import g15globals
+from gnome15 import g15text
+from gnome15 import g15plugin
 import datetime
 from threading import Timer
 import time
-import gtk
 import os
 import sys
 import cairo
-import rsvg
-import pango
 import locale
 import xdg.BaseDirectory
 
@@ -88,7 +92,7 @@ def get_theme_dirs(model_name, gconf_key, gconf_client):
 class G15CairoClockPreferences():
     
     def __init__(self, parent, driver, gconf_key, gconf_client):
-        widget_tree = gtk.Builder()
+        widget_tree = Gtk.Builder()
         widget_tree.add_from_file(os.path.join(os.path.dirname(__file__), "cairo-clock.ui"))
         
         dialog = widget_tree.get_object("ClockDialog")
@@ -150,7 +154,7 @@ class G15CairoClock(g15plugin.G15RefreshingPlugin):
         # Painting is done using cairo and cairo-clock themes, no need for a theme
         return None
             
-    def config_changed(self, client, connection_id, entry, args):
+    def config_changed(self, client, connection_id, entry, *args):
         self._load_surfaces()
         self.screen.set_priority(self.page, g15screen.PRI_HIGH, revert_after = 3.0)
         self.do_refresh()
@@ -213,7 +217,7 @@ class G15CairoClock(g15plugin.G15RefreshingPlugin):
         for i in names:
             path = self.clock_theme_dir + "/" + i + ".svg"
             if os.path.exists(path):  
-                svg = rsvg.Handle(path)
+                svg = Rsvg.Handle.new_from_file(path)
                 try: 
                     if self.svg_size == None:
                         self.svg_size = svg.get_dimension_data()[2:4]
@@ -277,7 +281,7 @@ class G15CairoClock(g15plugin.G15RefreshingPlugin):
                 x = 4
                 gap = 8
                 
-            self.panel_text.set_attributes(text, align = pango.ALIGN_CENTER, font_desc = font_name, font_absolute_size = font_size * pango.SCALE / factor)
+            self.panel_text.set_attributes(text, align = Pango.Alignment.CENTER, font_desc = font_name, font_absolute_size = font_size * Pango.SCALE / factor)
             x, y, width, height = self.panel_text.measure()
             if horizontal: 
                 if self.screen.driver.get_bpp() == 1:
@@ -330,12 +334,12 @@ class G15CairoClock(g15plugin.G15RefreshingPlugin):
                 
             if draw_date:        
                 date_text = self._get_date_text()
-                self.time_text.set_attributes(pxwidth = 56, text = date_text, align = pango.ALIGN_CENTER, font_desc = "Fixed", font_absolute_size = 12 * pango.SCALE)
+                self.time_text.set_attributes(pxwidth = 56, text = date_text, align = Pango.Alignment.CENTER, font_desc = "Fixed", font_absolute_size = 12 * Pango.SCALE)
                 self.time_text.draw(0, 15)
                 
             if draw_time:        
                 time_text = self._get_time_text()                
-                self.time_text.set_attributes(pxwidth = 56, text = time_text, align = pango.ALIGN_CENTER, font_desc = "Fixed", font_absolute_size = 12 * pango.SCALE)
+                self.time_text.set_attributes(pxwidth = 56, text = time_text, align = Pango.Alignment.CENTER, font_desc = "Fixed", font_absolute_size = 12 * Pango.SCALE)
                 self.time_text.draw(self.width - 56, 15)
         
     def _do_paint_clock(self, canvas, width, height, draw_date = True, draw_time = True):

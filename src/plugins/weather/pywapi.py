@@ -25,9 +25,9 @@
 Fetches weather reports from Google Weather, Yahoo Wheather and NOAA
 """
 
-import urllib2, re
+import urllib.request, urllib.error, urllib.parse, re
 from xml.dom import minidom
-from urllib import quote
+from urllib.parse import quote
 
 GOOGLE_WEATHER_URL   = 'http://www.google.com/ig/api?weather=%s&hl=%s'
 GOOGLE_COUNTRIES_URL = 'http://www.google.com/ig/countries?output=xml&hl=%s'
@@ -50,9 +50,9 @@ def get_weather_from_google(location_id, hl = ''):
     Returns:
       weather_data: a dictionary of weather data that exists in XML feed. 
     """
-    location_id, hl = map(quote, (location_id, hl))
+    location_id, hl = list(map(quote, (location_id, hl)))
     url = GOOGLE_WEATHER_URL % (location_id, hl)
-    handler = urllib2.urlopen(url)
+    handler = urllib.request.urlopen(url)
     content_type = handler.info().dict['content-type']
     charset = re.search('charset\=(.*)',content_type).group(1)
     if not charset:
@@ -71,7 +71,7 @@ def get_weather_from_google(location_id, hl = ''):
         'forecast_information': ('city', 'postal_code', 'latitude_e6', 'longitude_e6', 'forecast_date', 'current_date_time', 'unit_system'),
         'current_conditions': ('condition','temp_f', 'temp_c', 'humidity', 'wind_condition', 'icon')
     }           
-    for (tag, list_of_tags2) in data_structure.iteritems():
+    for (tag, list_of_tags2) in data_structure.items():
         tmp_conditions = {}
         for tag2 in list_of_tags2:
             try: 
@@ -106,7 +106,7 @@ def get_countries_from_google(hl = ''):
     """
     url = GOOGLE_COUNTRIES_URL % hl
     
-    handler = urllib2.urlopen(url)
+    handler = urllib.request.urlopen(url)
     content_type = handler.info().dict['content-type']
     charset = re.search('charset\=(.*)',content_type).group(1)
     if not charset:
@@ -142,7 +142,7 @@ def get_cities_from_google(country_code, hl = ''):
     """
     url = GOOGLE_CITIES_URL % (country_code.lower(), hl)
     
-    handler = urllib2.urlopen(url)
+    handler = urllib.request.urlopen(url)
     content_type = handler.info().dict['content-type']
     charset = re.search('charset\=(.*)',content_type).group(1)
     if not charset:
@@ -189,7 +189,7 @@ def get_weather_from_yahoo(location_id, units = 'metric'):
     else:
         unit = 'f'
     url = YAHOO_WEATHER_URL % (location_id, unit)
-    handler = urllib2.urlopen(url)
+    handler = urllib.request.urlopen(url)
     dom = minidom.parse(handler)    
     handler.close()
         
@@ -206,7 +206,7 @@ def get_weather_from_yahoo(location_id, units = 'metric'):
         'condition': ('text', 'code', 'temp', 'date')
     }       
     
-    for (tag, attrs) in ns_data_structure.iteritems():
+    for (tag, attrs) in ns_data_structure.items():
         weather_data[tag] = xml_get_ns_yahoo_tag(dom, YAHOO_WEATHER_NS, tag, attrs)
 
     weather_data['geo'] = {}
@@ -249,7 +249,7 @@ def get_weather_from_noaa(station_id):
     """
     station_id = quote(station_id)
     url = NOAA_WEATHER_URL % (station_id)
-    handler = urllib2.urlopen(url)
+    handler = urllib.request.urlopen(url)
     dom = minidom.parse(handler)    
     handler.close()
         

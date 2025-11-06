@@ -15,7 +15,7 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
-import gnome15.g15notify as g15notify
+from gnome15 import g15notify
 
 class G15Timer():
     TIMER_MODE_STOPWATCH = 0

@@ -19,7 +19,10 @@
 Various conversions
 '''
 
-import gtk.gdk
+import gi
+gi.require_version('Gtk','3.0')
+from gi.repository import Gtk
+from gi.repository import Gdk 
 import math
 
 def rgb_to_string(rgb):
@@ -46,14 +49,14 @@ def to_rgb(string_rgb, default = None):
     # Unfortunately, for running g15-system-service, there is no DISPLAY
     # set in it's environment, so it would make it throw an error.
     # See https://projects.russo79.com/issues/173
-    import g15gconf
+    from . import g15gconf
     return g15gconf._to_rgb(string_rgb, default)
 
 def to_pixel(rgb):
     return ( rgb[0] << 24 ) + ( rgb[1] << 16 ) + ( rgb[2] < 8 ) + 0
 
 def to_color(rgb):
-    return gtk.gdk.Color(rgb[0] <<8, rgb[1] <<8,rgb[2] <<8)
+    return Gdk.Color(rgb[0] <<8, rgb[1] <<8,rgb[2] <<8)
 
 def rgb_to_uint16(r, g, b):
     rBits = r * 32 / 255

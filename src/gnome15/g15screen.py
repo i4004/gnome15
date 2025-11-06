@@ -16,8 +16,9 @@
 
 import gnome15.g15locale as g15locale
 import gnome15.g15devices as g15devices
+import time
 #from gnome15 import g15pluginmanager
-_ = g15locale.get_translation("gnome15").ugettext
+_ = g15locale.get_translation("gnome15").gettext
 
 """
 Queues
@@ -45,28 +46,28 @@ Simple colors
 """
 COLOURS = [(0, 0, 0), (255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (255, 0, 255), (0, 255, 255), (255, 255, 255)]
 
-import g15driver
-import util.g15scheduler as g15scheduler
-import util.g15pythonlang as g15pythonlang
-import util.g15gconf as g15gconf
-import util.g15cairo as g15cairo
-import util.g15icontools as g15icontools
-import g15profile
-import g15globals
-import g15drivermanager
-import g15keyboard
-import g15theme
-import g15actions
+from . import g15driver
+from gnome15.util import g15scheduler as g15scheduler
+from gnome15.util import g15pythonlang as g15pythonlang
+from gnome15.util import g15gconf as g15gconf
+from gnome15.util import g15cairo as g15cairo
+from gnome15.util import g15icontools as g15icontools
+from . import g15profile
+from . import g15globals
+from . import g15drivermanager
+from . import g15keyboard
+from . import g15theme
+from . import g15actions
 import time
 import threading
 import cairo
-import gconf
+from gi.repository import GConf
 import os.path
 import sys
 import logging
 from threading import RLock
-from g15exceptions import NotConnectedException
-from g15exceptions import RetryException
+from .g15exceptions import NotConnectedException
+from .g15exceptions import RetryException
 logger = logging.getLogger(__name__)
 
 """
@@ -343,7 +344,7 @@ class G15Screen():
         
         # Start the driver
         self.attempt_connection() 
-        
+ 
         # Start handling keys
         self.key_handler.start()
         self.key_handler.action_listeners.append(self)
@@ -357,7 +358,7 @@ class G15Screen():
         # Monitor gconf
         screen_key = "/apps/gnome15/%s" % self.device.uid
         logger.info("Watching GConf settings in %s", screen_key)
-        self.conf_client.add_dir(screen_key, gconf.CLIENT_PRELOAD_NONE)
+        self.conf_client.add_dir(screen_key, GConf.ClientPreloadType.PRELOAD_NONE)
         self.notify_handles.append(self.conf_client.notify_add("%s/cycle_screens" % screen_key, self.resched_cycle))
         self.notify_handles.append(self.conf_client.notify_add("%s/active_profile" % screen_key, self.active_profile_changed))
         self.notify_handles.append(self.conf_client.notify_add("%s/driver" % screen_key, self.driver_changed))
@@ -787,7 +788,7 @@ class G15Screen():
             level = control.upper
         self.conf_client.set_int("/apps/gnome15/%s/%s" % (self.device.uid, control.id), level)
         
-    def control_configuration_changed(self, client, connection_id, entry, args):
+    def control_configuration_changed(self, client, connection_id, entry, *args):
         key = os.path.basename(entry.key)
         logger.debug("Controls changed %s", str(key))
         if self.driver != None:
@@ -828,13 +829,13 @@ class G15Screen():
             raise Exception("Cannot release defeat profile change if not requested")
         self.defeat_profile_change -= 1
         
-    def driver_changed(self, client, connection_id, entry, args):
+    def driver_changed(self, client, connection_id, entry, *args):
         if self.reconnect_timer:
             self.reconnect_timer.cancel()
         if self.driver == None or self.driver.id != entry.value.get_string():
             g15scheduler.schedule("DriverChange", 1.0, self._reload_driver)
         
-    def active_profile_changed(self, client, connection_id, entry, args):
+    def active_profile_changed(self, client, connection_id, entry, *args):
         # Check if the active profile has change)
         new_profile = g15profile.get_active_profile(self.device)
         if new_profile == None:
@@ -953,7 +954,7 @@ class G15Screen():
         self.deleting = { }
         self._do_redraw()
              
-    def _control_changed(self, client, connection_id, entry, args):
+    def _control_changed(self, client, connection_id, entry, *args):
         control_id = entry.get_key().split("/")[-1]
         control = self.driver.get_control(control_id)
         control.set_from_configuration(self.driver.device, self.conf_client)
@@ -1006,7 +1007,7 @@ class G15Screen():
             return False
         
     def _should_deactivate(self, profile, mod):
-        import g15pluginmanager
+        from . import g15pluginmanager
         """
         Determine if a plugin should be deactivated based on the current profile
         and the state of the network
@@ -1020,7 +1021,7 @@ class G15Screen():
              ( g15pluginmanager.is_needs_network(mod) and not self.service.network_manager.is_network_available())
         
     def _should_activate(self, profile, mod):
-        import g15pluginmanager
+        from . import g15pluginmanager
         """
         Determine if a plugin should be activated based on the current profile
         and the state of the network
@@ -1252,6 +1253,7 @@ class G15Screen():
                 for listener in self.screen_change_listeners:
                     g15pythonlang.call_if_exists(listener, "driver_connected", self.driver)
                              
+                time.sleep(2)
                 self.complete_loading()
 
             except Exception as e:

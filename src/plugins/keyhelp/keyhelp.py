@@ -14,15 +14,15 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  
-import gnome15.g15locale as g15locale
-_ = g15locale.get_translation("keyhelp", modfile = __file__).ugettext
+from gnome15 import g15locale
+_ = g15locale.get_translation("keyhelp", modfile = __file__).gettext
 
-import gnome15.g15driver as g15driver
-import gnome15.g15theme as g15theme
-import gnome15.g15plugin as g15plugin
-import gnome15.g15actions as g15actions
-import gnome15.g15devices as g15devices
-import gnome15.g15profile as g15profile
+from gnome15 import g15driver
+from gnome15 import g15theme
+from gnome15 import g15plugin
+from gnome15 import g15actions
+from gnome15 import g15devices
+from gnome15 import g15profile
 import logging
 import os
 logger = logging.getLogger(__name__)
@@ -99,7 +99,7 @@ class G15KeyHelp(g15plugin.G15Plugin):
         page = self.screen.get_visible_page()
         originating_plugin = page.originating_plugin
         if originating_plugin:
-            import gnome15.g15pluginmanager as g15pluginmanager
+            from gnome15 import g15pluginmanager
             actions = g15pluginmanager.get_actions(g15pluginmanager.get_module_for_id(originating_plugin.__module__), self.screen.device)
             active_profile = g15profile.get_active_profile(self.screen.driver.device) if self.screen.driver is not None else None
             for action_id in actions:

@@ -14,11 +14,11 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import Queue
+import queue
 import threading
 import traceback
 import sys
-import gobject
+from gi.repository import GObject
 import time
 from threading import RLock
 from threading import local
@@ -60,7 +60,7 @@ class GTimer:
         self.scheduler = scheduler
         self.task_queue = task_queue
         self.task_name = task_name
-        self.source = gobject.timeout_add(int(float(interval) * 1000.0 * TIME_FACTOR), self.exec_item, function, *args)
+        self.source = GObject.timeout_add(int(float(interval) * 1000.0 * TIME_FACTOR), self.exec_item, function, *args)
         self.complete = False
         self.scheduler.all_jobs.append(self)
         
@@ -92,7 +92,7 @@ class GTimer:
             # was automatically destroyed since the callback function returns False.
             # Avoid thousands of warnings from source_remove().
             if not self.is_complete():
-                gobject.source_remove(self.source)
+                GObject.source_remove(self.source)
             logger.debug("Cancelled GTimer %s", str(self.task_name))
         finally:
             self.scheduler.all_jobs_lock.release()
@@ -111,13 +111,13 @@ class JobScheduler():
         self.all_jobs_lock = RLock()
         
     def print_all_jobs(self):
-        print "Scheduled"
-        print "------"
+        print("Scheduled")
+        print("------")
         for j in self.all_jobs:
-            print "    %s - %s" % ( j.task_name, str(j.function))
-        print
-        print "Running"
-        print "-------"
+            print("    %s - %s" % ( j.task_name, str(j.function)))
+        print()
+        print("Running")
+        print("-------")
         for q in self.queues:
             self.queues[q].print_all_jobs()
         
@@ -179,7 +179,7 @@ class JobQueue():
         
     def __init__(self,number_of_workers=1, name="JobQueue"):
         logger.debug("Creating job queue %s with %d workers", name, number_of_workers)
-        self.work_queue = Queue.Queue()
+        self.work_queue = queue.Queue()
         self.queued_jobs = []
         self.name = name
         self.stopping = False
@@ -194,9 +194,9 @@ class JobQueue():
             self.threads.append(t)
             
     def print_all_jobs(self):
-        print "Queue %s" % self.name
+        print("Queue %s" % self.name)
         for s in self.queued_jobs:
-            print "     %s - %s" % (str(s.item), str(s.queued))
+            print("     %s - %s" % (str(s.item), str(s.queued)))
             
     def stop(self):
         logger.info("Stopping queue %s", self.name)
@@ -225,7 +225,7 @@ class JobQueue():
                                  str(item.finished))
                     if item in self.queued_jobs:
                         self.queued_jobs.remove(item)
-            except Queue.Empty as e:
+            except queue.Empty as e:
                 logger.debug("The queue is already empty", exc_info = e)
                 pass
             logger.info("Cleared queue %s", self.name)

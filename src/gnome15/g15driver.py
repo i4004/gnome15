@@ -174,7 +174,7 @@ CAIRO_IMAGE_FORMAT=4
 
 FX_QUEUE = "ControlEffects"
 
-import util.g15scheduler as g15scheduler
+from gnome15.util import g15scheduler as g15scheduler
 import time
 import colorsys
 from threading import Lock

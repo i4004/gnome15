@@ -15,7 +15,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import g15convert
+from . import g15convert
 
 '''
 Set of utility methods to ease the binding between UI widgets and gconf settings
@@ -167,7 +167,7 @@ def configure_checkbox_from_gconf(gconf_client, gconf_key, widget_id, default_va
         connection_id = gconf_client.notify_add(gconf_key, boolean_conf_value_change,( widget, gconf_key ));
     return (handler_id, connection_id)
 
-def boolean_conf_value_change(client, connection_id, entry, args):
+def boolean_conf_value_change(client, connection_id, entry, *args):
     widget, key = args
     widget.set_active( entry.get_value().get_bool())
 
@@ -199,7 +199,7 @@ def configure_text_from_gconf(gconf_client, gconf_key, widget_id, default_value,
         connection_id = gconf_client.notify_add(gconf_key, text_conf_value_change,( widget, gconf_key ));
     return (handler_id, connection_id)
 
-def text_conf_value_change(client, connection_id, entry, args):
+def text_conf_value_change(client, connection_id, entry, *args):
     widget, key = args
     widget.set_text( entry.get_value().get_string())
 
@@ -239,7 +239,7 @@ def configure_radio_from_gconf(gconf_client, gconf_key, widget_ids, gconf_values
             connection_ids.append(None)
     return (handler_ids, connection_ids)
 
-def radio_conf_value_change(client, connection_id, entry, args):
+def radio_conf_value_change(client, connection_id, entry, *args):
     widget, key, gconf_value = args
     str_value = entry.get_value().get_string()
     widget.set_active(str_value == gconf_value)

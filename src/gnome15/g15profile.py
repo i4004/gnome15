@@ -22,18 +22,18 @@ A number of utility functions are also supplied to do things such as
 getting the default or active profile.
 """
 
-import gconf
+from gi.repository import GConf
 import time
-import util.g15convert as g15convert
-import util.g15gconf as g15gconf
-import util.g15os as g15os
-import util.g15icontools as g15icontools
-import g15globals
-import g15actions
-import g15devices
-import g15uinput
-import g15driver
-import ConfigParser
+from gnome15.util import g15convert as g15convert
+from gnome15.util import g15gconf as g15gconf
+from gnome15.util import g15os as g15os
+from gnome15.util import g15icontools as g15icontools
+from . import g15globals
+from . import g15actions
+from . import g15devices
+from . import g15uinput
+from . import g15driver
+import configparser
 import codecs
 import os.path
 import stat
@@ -41,11 +41,11 @@ import pyinotify
 import logging
 import re
 import zipfile
-from cStringIO import StringIO
+from io import StringIO
  
 logger = logging.getLogger(__name__)
 active_profile = None
-conf_client = gconf.client_get_default()
+conf_client = GConf.Client.get_default()
     
 '''
 Watch for changes in macro configuration directory.
@@ -233,7 +233,7 @@ def create_profile(profile):
 
 
 def generate_profile_id():
-    return long(time.time())
+    return int(time.time())
     
 def get_profile(device, profile_id):
     """
@@ -260,10 +260,10 @@ def get_active_profile(device):
     """
     val= conf_client.get("/apps/gnome15/%s/active_profile" % device.uid)
     profile = None
-    if val != None and val.type == gconf.VALUE_INT:
+    if val != None and val.type == GConf.ValueType.INT:
         # This is just here for compatibility with <= 0.7.x
         profile = get_profile(device, str(val.get_int()))
-    elif val != None and val.type == gconf.VALUE_STRING:
+    elif val != None and val.type == GConf.ValueType.STRING:
         profile = get_profile(device, val.get_string())
 
     if profile is None:
@@ -589,8 +589,9 @@ class G15Macro(object):
             self.profile._remove_if_exists("%s_simplemacro" % pk, section_name)
             self.profile._remove_if_exists("%s_action" % pk, section_name)
         
+    # Leaving this functin for convenience only. Strings on python3 are already UTF-8
     def _encode_val(self, val):
-        val = val.encode('utf8')
+        #val = val.encode('utf8')
         return val
     
     def _decode_val(self, val):
@@ -678,7 +679,7 @@ class G15Profile(object):
         
         self.device = device
         self.read_only = False
-        self.parser = ConfigParser.ConfigParser({
+        self.parser = configparser.ConfigParser({
                                                      })        
         self.name = None
         self.icon = None
@@ -1027,12 +1028,12 @@ class G15Profile(object):
         
         # Load macro file
         if self.id != -1 or filename is not None or fd is not None:
-            if ( isinstance(filename, str) or isinstance(filename, unicode) ) and os.path.exists(filename):
+            if ( isinstance(filename, str) or isinstance(filename, str) ) and os.path.exists(filename):
                 self.read_only = not os.stat(filename)[0] & stat.S_IWRITE
-                self.parser.readfp(codecs.open(filename, "r", "utf8"))
+                self.parser.read_file(codecs.open(filename, "r", "utf8"))
             elif fd is not None:
                 self.read_only = True
-                self.parser.readfp(fd)
+                self.parser.read_file(fd)
         else:
             self.read_only = False
         
@@ -1109,7 +1110,8 @@ class G15Profile(object):
         else:
             if activate_on in self.macros and memory_number <= len(self.macros[activate_on]):
                 sm += self.macros[activate_on][memory_number - 1]
-        sm.sort(self._comparator)
+        #sm.sort(self._comparator)
+        sm.sort(key=lambda x: x._get_total(x.keys))
         return sm
                     
     '''
@@ -1151,10 +1153,10 @@ class G15Profile(object):
             if not os.path.exists(dir_name):
                 os.mkdir(dir_name)
             tmp_file = "%s.tmp" % save_file
-            with open(tmp_file, 'wb') as configfile:
+            with open(tmp_file, 'w') as configfile:
                 self.parser.write(configfile)
             os.rename(tmp_file, save_file)
-            fhandle = file(save_file, 'a')
+            fhandle = open(save_file, 'a')
             try:
                 os.utime(save_file, None)
             finally:

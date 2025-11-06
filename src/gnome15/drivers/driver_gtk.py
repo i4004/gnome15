@@ -14,20 +14,25 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import gnome15.g15locale as g15locale
-_ = g15locale.get_translation("gnome15-drivers").ugettext
+from gnome15 import g15locale
+_ = g15locale.get_translation("gnome15-drivers").gettext
 
-import gnome15.g15driver as g15driver
-import gnome15.util.g15uigconf as g15uigconf
-import gnome15.util.g15cairo as g15cairo
-import gnome15.util.g15icontools as g15icontools
-import gnome15.g15globals as g15globals
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk
+from gi.repository import Gdk
+from gi.repository import GObject
+from gi.repository import GConf
+from gi.repository import GLib
 
-import gconf
+
+from gnome15 import g15driver
+from gnome15.util import g15uigconf
+from gnome15.util import g15cairo
+from gnome15.util import g15icontools
+from gnome15 import g15globals
 
 import os
-import gtk.gdk
-import gobject
 import cairo
 
 from PIL import Image
@@ -84,7 +89,7 @@ class GtkDriverPreferences():
 
     def __init__(self, device, parent, gconf_client):
         g15locale.get_translation("driver_gtk")
-        widget_tree = gtk.Builder()
+        widget_tree = Gtk.Builder()
         widget_tree.set_translation_domain("driver_gtk")
         widget_tree.add_from_file(os.path.join(g15globals.ui_dir, "driver_gtk.ui"))
         self.window = widget_tree.get_object("GtkDriverSettings")
@@ -121,7 +126,7 @@ class Driver(g15driver.AbstractDriver):
         self.buttons = {}
         self.event_box = None
         self.on_close = on_close
-        self.conf_client = gconf.client_get_default()
+        self.conf_client = GConf.Client.get_default()
         self.notify_handle = self.conf_client.notify_add("/apps/gnome15/%s/gtk_mode" % self.device.uid, self.config_changed)
         self._init_driver()
         
@@ -131,7 +136,7 @@ class Driver(g15driver.AbstractDriver):
         else: 
             return cairo.ANTIALIAS_NONE
         
-    def config_changed(self, client, connection_id, entry, args):
+    def config_changed(self, client, connection_id, entry, *args):
         self._init_driver()
         if self.on_driver_options_change:
             self.on_driver_options_change()
@@ -189,9 +194,10 @@ class Driver(g15driver.AbstractDriver):
                 # Now convert the ARGB to a PIL image so it can be converted to a 1 bit monochrome image, with all
                 # colours dithered. It would be nice if Cairo could do this :( Any suggestions? 
                 pil_img = Image.frombuffer("RGBA", self.lcd_size, argb_surface.get_data(), "raw", "RGBA", 0, 1)
-                pil_img = ImageMath.eval("convert(pil_img,'1')",pil_img=pil_img)
-                pil_img = ImageMath.eval("convert(pil_img,'P')",pil_img=pil_img)
-                pil_img = pil_img.point(lambda i: i >= 250,'1')
+                #pil_img = ImageMath.eval("convert(pil_img,'1')",pil_img=pil_img)
+                pil_img = ImageMath.eval("convert(pil_img,'L')",pil_img=pil_img)
+                #pil_img = ImageMath.eval("convert(pil_img,'P')",pil_img=pil_img)
+                pil_img = pil_img.point(lambda i: i >= 170,'1')
                 
                 invert_control = self.get_control("invert_lcd")
                 if invert_control and invert_control.value == 1:            
@@ -207,7 +213,7 @@ class Driver(g15driver.AbstractDriver):
                 argb_context.set_source_surface(image)
                 argb_context.paint()
                 self.image = argb_surface
-            gobject.timeout_add(0, self.redraw)
+            GObject.timeout_add(0, self.redraw)
             
     def process_svg(self, document):  
         if self.bpp == 1:
@@ -225,7 +231,7 @@ class Driver(g15driver.AbstractDriver):
             self.area.queue_draw()
         
     def on_update_control(self, control):
-        gobject.idle_add(self._do_update_control, control)
+        GLib.idle_add(self._do_update_control, control)
     
     def grab_keyboard(self, callback):
         self.callback = callback;
@@ -236,7 +242,7 @@ class Driver(g15driver.AbstractDriver):
     def _on_connect(self):
         self._init_driver()
         logger.info("Starting GTK driver")
-        gobject.idle_add(self._init_ui)
+        GLib.idle_add(self._init_ui)
         
     def _on_disconnect(self):
         logger.info("Disconnecting GTK driver")
@@ -245,7 +251,7 @@ class Driver(g15driver.AbstractDriver):
         self.connected = False
         if self.on_close != None:
             self.on_close(self, retry=False)
-        gobject.idle_add(self._close_window)
+        GLib.idle_add(self._close_window)
         
     def _simulate_key(self, widget, key, state):
         if self.callback != None:
@@ -260,9 +266,9 @@ class Driver(g15driver.AbstractDriver):
             elif control == self.get_control_for_hint(g15driver.HINT_DIMMABLE):
                 if isinstance(control.value, int):
                     v = ( 65535 / control.upper ) * control.value
-                    self.event_box.modify_bg(gtk.STATE_NORMAL, gtk.gdk.Color(v, v, v))
+                    self.event_box.modify_bg(Gtk.StateType.NORMAL, Gdk.Color(v, v, v))
                 else:
-                    self.event_box.modify_bg(gtk.STATE_NORMAL, gtk.gdk.Color(control.value[0] << 8, control.value[1] << 8, control.value[2] << 8))
+                    self.event_box.modify_bg(Gtk.StateType.NORMAL, Gdk.Color(control.value[0] << 8, control.value[1] << 8, control.value[2] << 8))
         
     def _window_closed(self, window, evt):
         if self.main_window != None:
@@ -294,9 +300,9 @@ class Driver(g15driver.AbstractDriver):
             w.destroy()
         self.area = None
         
-    def _mode_changed(self, client, connection_id, entry, args):
+    def _mode_changed(self, client, connection_id, entry, *args):
         if self.is_connected():
-            gobject.idle_add(self.disconnect)
+            GLib.idle_add(self.disconnect)
         else:
             logger.warning("Mode change would cause disconnect when already connected. %s",
                            str(entry))
@@ -306,7 +312,7 @@ class Driver(g15driver.AbstractDriver):
         zoom = self.get_zoom()
         width = self.lcd_size[0]
         height = self.lcd_size[1]
-        if self.area != None and self.area.window != None:
+        if self.area != None and self.area.get_window() != None:
             surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, zoom * width, zoom * height)
             context = cairo.Context(surface)        
             context.set_antialias(self.get_antialias())
@@ -334,7 +340,7 @@ class Driver(g15driver.AbstractDriver):
             self.mode = g15driver.MODEL_G19
         logger.info("Mode is now %s", self.mode)
         self.controls = controls[self.mode]
-        import gnome15.g15devices as g15devices
+        from gnome15 import g15devices
         device_info = g15devices.get_device_info(self.mode)
         self.bpp = device_info.bpp
         self.action_keys = device_info.action_keys
@@ -345,30 +351,30 @@ class Driver(g15driver.AbstractDriver):
     def _init_ui(self):
         logger.info("Initialising GTK UI")
         self.area = VirtualLCD(self)
-        #self.area.connect("expose_event", self._expose)
+        #self.area.connect("draw", self._expose)
         self.hboxes = []
         self.buttons = {}
         zoomed_size = self.get_zoomed_size()
         self.area.set_size_request(zoomed_size[0], zoomed_size[1])        
-        self.vbox = gtk.VBox ()            
+        self.vbox = Gtk.VBox ()            
         self.vbox.add(self.area)
-        rows = gtk.VBox()
+        rows = Gtk.VBox()
         for row in self.get_key_layout():
-            hbox = gtk.HBox()
+            hbox = Gtk.HBox()
             for key in row:
                 key_text = " ".join(g15driver.get_key_names(list(key)))
-                g_button = gtk.Button(key_text)
+                g_button = Gtk.Button(key_text)
                 g_button.connect("pressed", self._simulate_key, key, g15driver.KEY_STATE_DOWN)
                 g_button.connect("released", self._simulate_key, key, g15driver.KEY_STATE_UP)
                 hbox.add(g_button)
                 self.buttons[key] = g_button
             rows.add(hbox)
             
-        self.event_box = gtk.EventBox()
+        self.event_box = Gtk.EventBox.new()
         self.event_box.add(rows)
         self.vbox.add(self.event_box)
         
-        self.main_window = gtk.Window(gtk.WINDOW_TOPLEVEL)
+        self.main_window = Gtk.Window.new(Gtk.WindowType.TOPLEVEL)
         self.main_window.set_title("Gnome15") 
         self.main_window.set_icon_from_file(g15icontools.get_app_icon(self.conf_client, "gnome15"))
         self.main_window.add(self.vbox)
@@ -378,9 +384,9 @@ class Driver(g15driver.AbstractDriver):
         if control:       
             if isinstance(control.value, int):
                 v = ( 65535 / control.upper ) * control.value
-                self.event_box.modify_bg(gtk.STATE_NORMAL, gtk.gdk.Color(v, v, v))
+                self.event_box.modify_bg(Gtk.StateType.NORMAL, Gdk.Color(v, v, v))
             else:
-                self.event_box.modify_bg(gtk.STATE_NORMAL, gtk.gdk.Color(control.value[0] << 8, control.value[1] << 8, control.value[2] << 8))
+                self.event_box.modify_bg(Gtk.StateType.NORMAL, Gdk.Color(control.value[0] << 8, control.value[1] << 8, control.value[2] << 8))
         
         self.main_window.show_all()
         logger.info("Initialised GTK UI")
@@ -390,22 +396,23 @@ class Driver(g15driver.AbstractDriver):
     def __del__(self):
         self.conf_client.notify_remove(self.notify_handle)
         
-class VirtualLCD(gtk.DrawingArea):
+class VirtualLCD(Gtk.DrawingArea):
 
     def __init__(self, driver):        
-        self.__gobject_init__()
+        GObject.GObject.__init__(self)
         self.driver = driver
         self.set_double_buffered(True)
         super(VirtualLCD, self).__init__()
-        self.connect("expose-event", self._expose)
+        self.connect("draw", self._expose)
         self.buffer = None
 
     def _expose(self, widget, event):
         if not self.driver.is_connected():
             return
-        cr = widget.window.cairo_create()
-        cr.rectangle(event.area.x, event.area.y,
-                     event.area.width, event.area.height)
+        _, clip = Gdk.cairo_get_clip_rectangle(event)
+
+        cr = widget.get_window().cairo_create()
+        cr.rectangle(clip.x, clip.y, clip.width, clip.height)
         cr.clip()
             
         # Paint
@@ -424,5 +431,5 @@ class VirtualLCD(gtk.DrawingArea):
 #        context.paint()
 #        self.window.end_paint()
     
-gobject.type_register(VirtualLCD)
+GObject.type_register(VirtualLCD)
     

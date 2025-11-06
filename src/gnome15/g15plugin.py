@@ -15,13 +15,13 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  
 import dbus
-import util.g15scheduler as g15scheduler
-import util.g15cairo as g15cairo
-import util.g15icontools as g15icontools
-import g15theme
-import g15screen
+from gnome15.util import g15scheduler as g15scheduler
+from gnome15.util import g15cairo as g15cairo
+from gnome15.util import g15icontools as g15icontools
+from . import g15theme
+from . import g15screen
 import sys
-import gobject
+from gi.repository import GObject
 
 class G15Plugin():
     
@@ -92,7 +92,7 @@ class G15Plugin():
     def destroy(self):
         pass
             
-    def _reactivate(self, client, connection_id, entry, args):
+    def _reactivate(self, client, connection_id, entry, *args):
         self.deactivate()
         self.activate()
         
@@ -269,14 +269,14 @@ class G15RefreshingPlugin(G15PagePlugin):
     def _cancel_refresh(self):
         if self.timer != None:
             if isinstance(self.timer, int):
-                gobject.source_remove(self.timer)
+                GObject.source_remove(self.timer)
             else:
                 self.timer.cancel()
             self.timer = None
         
     def _schedule_refresh(self):
         if self.schedule_on_gobject:
-            self.timer = gobject.timeout_add(int(self.get_next_tick() * 1000), self._refresh)
+            self.timer = GObject.timeout_add(int(self.get_next_tick() * 1000), self._refresh)
         else:
             self.timer = g15scheduler.schedule("%s-Redraw" % self.page_id,
                                                self.get_next_tick(),

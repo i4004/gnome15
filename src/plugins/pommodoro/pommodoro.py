@@ -19,24 +19,26 @@ Pommodoro timer plugin for Gnome15.
 This plugin allows a user to apply the Pommodoro Technique to manage their time.
 """
 
-import gnome15.g15locale as g15locale
-_ = g15locale.get_translation("pommodoro", modfile = __file__).ugettext
+from gnome15 import g15locale
+_ = g15locale.get_translation("pommodoro", modfile = __file__).gettext
 
-import gnome15.g15screen as g15screen
-import gnome15.g15theme as g15theme
-import gnome15.util.g15scheduler as g15scheduler
-import gnome15.util.g15pythonlang as g15pythonlang
-import gnome15.util.g15gconf as g15gconf
-import gnome15.util.g15uigconf as g15uigconf
-import gnome15.g15driver as g15driver
-import gnome15.g15globals as g15globals
-import gnome15.g15text as g15text
-import gnome15.g15plugin as g15plugin
-import gnome15.util.g15cairo as g15cairo
-import gnome15.util.g15scheduler as g15scheduler
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk
+
+from gnome15 import g15screen
+from gnome15 import g15theme
+from gnome15.util import g15scheduler
+from gnome15.util import g15pythonlang
+from gnome15.util import g15gconf
+from gnome15.util import g15uigconf
+from gnome15 import g15driver
+from gnome15 import g15globals
+from gnome15 import g15text
+from gnome15 import g15plugin
+from gnome15.util import g15cairo
+from gnome15.util import g15scheduler
 import datetime
-import gtk
-import pango
 import os
 import locale
 
@@ -78,7 +80,7 @@ def create(gconf_key, gconf_client, screen):
     return G15PommodoroPlugin(gconf_key, gconf_client, screen)
 
 def show_preferences(parent, driver, gconf_client, gconf_key):
-    widget_tree = gtk.Builder()
+    widget_tree = Gtk.Builder()
     widget_tree.add_from_file(os.path.join(os.path.dirname(__file__), "pommodoro.ui"))
 
     dialog = widget_tree.get_object("PommodoroPreferencesDialog")
@@ -480,7 +482,7 @@ class G15PommodoroPlugin(g15plugin.G15RefreshingPlugin):
                          / self.pommodoro_timer.timer_value.total_seconds() \
                          * 100)
 
-    def _config_changed(self, client, connection_id, entry, args):
+    def _config_changed(self, client, connection_id, entry, *args):
         self._load_configuration()
         self.screen.set_priority(self.page, g15screen.PRI_HIGH, revert_after = 3.0)
 

@@ -26,16 +26,19 @@ Accounts are stored as simple XML files in .g
 
 import os
 from lxml import etree 
-import gtk
-import g15globals
-import util.g15scheduler as g15scheduler
-import util.g15gconf as g15gconf
-import util.g15os as g15os
-import util.g15pythonlang as g15pythonlang
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk
+from gi.repository import GObject
+from gi.repository import GLib
+from gnome15 import g15globals
+from gnome15.util import g15scheduler as g15scheduler
+from gnome15.util import g15gconf as g15gconf
+from gnome15.util import g15os as g15os
+from gnome15.util import g15pythonlang as g15pythonlang
 import pyinotify
 import pwd
 from threading import Lock
-import gobject
 import keyring
 
 import logging
@@ -134,7 +137,7 @@ class G15Keyring():
                 return
                 
             # Ask for the password
-            widget_tree = gtk.Builder()
+            widget_tree = Gtk.Builder()
             widget_tree.add_from_file(os.path.join(g15globals.ui_dir, "password.ui"))
             dialog = widget_tree.get_object("PasswordDialog")
             text_widget = widget_tree.get_object("Text")
@@ -175,7 +178,7 @@ a password change).") % (account.name, username))
         else:
             self.lock.acquire()
             self.password = None
-            gobject.idle_add(self.find_secret, account, name)
+            GLib.idle_add(self.find_secret, account, name)
             self.lock.acquire()
             self.lock.release()
         if self.password != None:
@@ -335,7 +338,7 @@ class G15AccountPreferences():
         self.account_mgr = G15AccountManager(file_path, item_name)
             
         
-        self.widget_tree = gtk.Builder()
+        self.widget_tree = Gtk.Builder()
         self.widget_tree.add_from_file(os.path.join(g15globals.ui_dir, "accounts.ui"))
         
         # Models        
@@ -453,7 +456,7 @@ class G15AccountPreferences():
                 self.account_mgr.accounts.remove(acc)
             self._reload_model()
         
-    def _urls_changed(self, client, connection_id, entry, args):
+    def _urls_changed(self, client, connection_id, entry, *args):
         self._reload_model()
         
     def _reload_model(self):
@@ -506,7 +509,7 @@ class G15AccountPreferences():
         if self.visible_options is not None:                   
             self.visible_options.component.reparent(place_holder)
         else:                   
-            l = gtk.Label("No options found for this account\ntype. Do you have all the required\nplugins installed?")
+            l = Gtk.Label(label="No options found for this account\ntype. Do you have all the required\nplugins installed?")
             l.xalign = 0.5
             l.show()
             place_holder.add(l)

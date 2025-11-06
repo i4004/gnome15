@@ -24,14 +24,14 @@ All key events are handled on a queue (one per instance of a key handler).
 """
 
 import gnome15.g15locale as g15locale
-_ = g15locale.get_translation("gnome15").ugettext
+_ = g15locale.get_translation("gnome15").gettext
 
-import g15profile
-import util.g15scheduler as g15scheduler
-import g15driver
-import g15actions
-import g15uinput
-import g15screen
+from . import g15profile
+from gnome15.util import g15scheduler as g15scheduler
+from . import g15driver
+from . import g15actions
+from . import g15uinput
+from . import g15screen
 
 import logging
 logger = logging.getLogger(__name__)
@@ -144,7 +144,7 @@ class G15KeyHandler():
     Callbacks
     """
             
-    def _active_profile_changed(self, client, connection_id, entry, args):
+    def _active_profile_changed(self, client, connection_id, entry, *args):
         self._reload_active_macros()
         return 1
 
@@ -219,7 +219,7 @@ class G15KeyHandler():
             When ALL keys are UP, clear out the state 
             """
             up = 0
-            for k, v in self.__key_states.items():
+            for k, v in list(self.__key_states.items()):
                 if v.state_id == g15driver.KEY_STATE_UP:
                     up += 1
             if up > 0 and up == len(self.__key_states):

@@ -39,22 +39,25 @@
 #FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 #OTHER DEALINGS IN THE SOFTWARE.
  
-import gnome15.g15locale as g15locale
-_ = g15locale.get_translation("weather-yahoo", modfile = __file__).ugettext
+from gnome15 import g15locale
+_ = g15locale.get_translation("weather-yahoo", modfile = __file__).gettext
 
-import gnome15.g15accounts as g15accounts
-import gnome15.g15globals as g15globals
-import gnome15.util.g15uigconf as g15uigconf
-import gnome15.util.g15pythonlang as g15pythonlang
-import gnome15.util.g15gconf as g15gconf
+import gi
+gi.require_version('Gtk','3.0')
+from gi.repository import Gtk
+
+from gnome15 import g15accounts
+from gnome15 import g15globals
+from gnome15.util import g15uigconf
+from gnome15.util import g15pythonlang
+from gnome15.util import g15gconf
 import weather
-import gtk
 import os
 import datetime
-import urllib2, re
+import urllib.request, urllib.error, urllib.parse, re
 import json
 from xml.dom import minidom
-from urllib import quote
+from urllib.parse import quote
 import time
 
 #select * from xml where url="http://weather.yahooapis.com/forecastrss?w=26350898"
@@ -134,7 +137,7 @@ class YahooWeatherOptions(weather.WeatherOptions):
     def __init__(self, gconf_client, gconf_key):
         weather.WeatherOptions.__init__(self)
                 
-        self.widget_tree = gtk.Builder()
+        self.widget_tree = Gtk.Builder()
         self.widget_tree.add_from_file(os.path.join(os.path.dirname(__file__), "weather-yahoo.ui"))
         self.component = self.widget_tree.get_object("OptionPanel")
         
@@ -160,7 +163,7 @@ class YahooWeatherBackend(weather.WeatherBackend):
         else:
             unit = 'f'
         url = YAHOO_WEATHER_URL_JSON % (location_id, unit)
-        handler = urllib2.urlopen(url)
+        handler = urllib.request.urlopen(url)
         jobj = json.load(handler)    
         handler.close()
         
@@ -339,7 +342,7 @@ class YahooWeatherBackend(weather.WeatherBackend):
         else:
             unit = 'f'
         url = YAHOO_WEATHER_URL % (location_id, unit)
-        handler = urllib2.urlopen(url)
+        handler = urllib.request.urlopen(url)
         dom = minidom.parse(handler)    
         handler.close()
             
@@ -361,7 +364,7 @@ class YahooWeatherBackend(weather.WeatherBackend):
             'condition': ('text', 'code', 'temp', 'date', 'day')
         }       
         
-        for (tag, attrs) in ns_data_structure.iteritems():
+        for (tag, attrs) in ns_data_structure.items():
             weather_data[tag] = xml_get_ns_yahoo_tag(dom, YAHOO_WEATHER_NS, tag, attrs)
     
         weather_data['geo'] = {}

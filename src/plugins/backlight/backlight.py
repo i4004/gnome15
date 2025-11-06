@@ -15,14 +15,17 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk
+from gi.repository import GLib
  
-import gnome15.g15theme as g15theme
-import gnome15.g15screen as g15screen
-import gnome15.g15driver as g15driver
-import gnome15.util.g15icontools as g15icontools
-import gnome15.g15gtk  as g15gtk
-import gtk
-import gobject
+from gnome15 import g15theme
+from gnome15 import g15screen
+from gnome15 import g15driver
+from gnome15.util import g15icontools
+from gnome15 import g15gtk
 
 # Plugin details - All of these must be provided
 id="backlight"
@@ -50,7 +53,7 @@ class G15Backlight():
                                      originating_plugin = plugin)
         self.window = g15gtk.G15OffscreenWindow("offscreenWindow")
         self.page.add_child(self.window)
-        gobject.idle_add(self._create_offscreen_window)
+        GLib.idle_add(self._create_offscreen_window)
         
     def deactivate(self):
         if self.page != None:
@@ -80,23 +83,23 @@ class G15Backlight():
         backlight_control = self.screen.driver.get_control_for_hint(g15driver.HINT_DIMMABLE)
         color = backlight_control.value
         
-        vbox = gtk.VBox()
-        adjustment = gtk.Adjustment(color[0], 0, 255, 1, 10, 10)
-        red = gtk.HScale(adjustment)
+        vbox = Gtk.VBox()
+        adjustment = Gtk.Adjustment(color[0], 0, 255, 1, 10, 10)
+        red = Gtk.HScale(adjustment)
         red.set_draw_value(False)
         adjustment.connect("value-changed", self._value_changed, 0)
         
         vbox.add(red)
         red.grab_focus()
-        adjustment = gtk.Adjustment(color[1], 0, 255, 1, 10, 10)
-        green = gtk.HScale(adjustment)
+        adjustment = Gtk.Adjustment(color[1], 0, 255, 1, 10, 10)
+        green = Gtk.HScale(adjustment)
         green.set_draw_value(False)
         adjustment.connect("value-changed", self._value_changed, 1)
         green.set_range(0, 255)
         green.set_increments(1, 10)
         vbox.add(green)
-        adjustment = gtk.Adjustment(color[2], 0, 255, 1, 10, 10)
-        blue = gtk.HScale(adjustment)
+        adjustment = Gtk.Adjustment(color[2], 0, 255, 1, 10, 10)
+        blue = Gtk.HScale(adjustment)
         blue.set_draw_value(False)
         adjustment.connect("value-changed", self._value_changed, 2)
         blue.set_range(0, 255)

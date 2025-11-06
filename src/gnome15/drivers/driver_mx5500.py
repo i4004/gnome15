@@ -19,15 +19,15 @@ Main implementation of a G15Driver that uses g15daemon to control and query the
 keyboard
 """
 
-import gnome15.g15driver as g15driver
-import gnome15.g15globals as g15globals
-import gnome15.util.g15uigconf as g15uigconf
-import gnome15.util.g15scheduler as g15scheduler
-import gtk
+from gnome15 import g15driver
+from gnome15 import g15globals
+from gnome15.util import g15uigconf
+from gnome15.util import g15scheduler
+from gi.repository import Gtk
 import os.path
 import socket
 import cairo
-import gconf
+from gi.repository import GConf
 from PIL import ImageMath
 from PIL import Image
 from threading import Thread
@@ -99,9 +99,9 @@ KEY_MAP = {
 invert_control = g15driver.Control("invert_lcd", "Invert LCD", 0, 0, 1, hint = g15driver.HINT_SWITCH )
 
 def show_preferences(device, parent, gconf_client):
-    widget_tree = gtk.Builder()
+    widget_tree = Gtk.Builder()
     widget_tree.add_from_file(os.path.join(g15globals.ui_dir, "driver_g15.ui"))
-    g15uigconf.configure_spinner_from_gconf(gconf_client, "/apps/gnome15/%s/g15daemon_port" % device.uid, "Port", DEFAULT_PORT, widget_tree, False)
+    g15uiGConf.configure_spinner_from_gconf(gconf_client, "/apps/gnome15/%s/g15daemon_port" % device.uid, "Port", DEFAULT_PORT, widget_tree, False)
     return widget_tree.get_object("DriverComponent")
 
 def fix_sans_style(root):
@@ -118,7 +118,7 @@ class G15Dispatcher(asyncore.dispatcher):
         self.recv_buffer = ""
         self.callback = callback;
         self.reverse_map = {}
-        for k in KEY_MAP.keys():
+        for k in list(KEY_MAP.keys()):
             self.reverse_map[KEY_MAP[k]] = k
         self.received_handshake = False
         asyncore.dispatcher.__init__(self, sock=conn, map = map)
@@ -217,7 +217,7 @@ class G15Dispatcher(asyncore.dispatcher):
     def send_with_options(self, buffer, options = 0):
         try:
             return self.socket.send(buffer, options)
-        except socket.error, why:
+        except socket.error as why:
             self.oob_buffer = ""
             if why.args[0] == EWOULDBLOCK:
                 return 0
@@ -267,7 +267,7 @@ class Driver(g15driver.AbstractDriver):
         self.connected = False
         self.async = None
         self.change_timer = None
-        self.conf_client = gconf.client_get_default()
+        self.conf_client = GConf.Client.get_default()
 
     def get_size(self):
         return self.device.lcd_size
@@ -309,7 +309,7 @@ class Driver(g15driver.AbstractDriver):
     def is_connected(self):
         return self.connected
         
-    def config_changed(self, client, connection_id, entry, args):
+    def config_changed(self, client, connection_id, entry, *args):
         if self.change_timer != None:
             self.change_timer.cancel()
         self.change_timer = g15scheduler.schedule("ChangeG15DaemonConfiguration", 3.0, self.update_conf)

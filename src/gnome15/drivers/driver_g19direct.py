@@ -18,22 +18,22 @@
 Alternative implementation of a G19 Driver that uses pylibg19 to communicate directly
 with the keyboard 
 """ 
-import gnome15.g15locale as g15locale
-_ = g15locale.get_translation("gnome15-drivers").ugettext
+from gnome15 import g15locale
+_ = g15locale.get_translation("gnome15-drivers").gettext
 
-from cStringIO import StringIO
+from io import StringIO
 from threading import RLock
 import cairo
-import gnome15.g15driver as g15driver
-import gnome15.g15globals as g15globals
-import gnome15.util.g15convert as g15convert
-import gnome15.util.g15uigconf as g15uigconf
-import gnome15.util.g15cairo as g15cairo
-import gnome15.g15exceptions as g15exceptions
+from gnome15 import g15driver
+from gnome15 import g15globals
+from gnome15.util import g15convert
+from gnome15.util import g15uigconf
+from gnome15.util import g15cairo
+from gnome15 import g15exceptions
 import sys
 import os
-import gconf
-import gtk
+from gi.repository import GConf
+from gi.repository import Gtk
 import usb
 import logging
 import array
@@ -116,25 +116,25 @@ class G19DriverPreferences():
 
     def __init__(self, device, parent, gconf_client):
         g15locale.get_translation("driver_g19direct")
-        widget_tree = gtk.Builder()
+        widget_tree = Gtk.Builder()
         widget_tree.set_translation_domain("driver_g19direct")
         widget_tree.add_from_file(os.path.join(g15globals.ui_dir, "driver_g19direct.ui"))
         self.window = widget_tree.get_object("G19DirectDriverSettings")
-        self.window.set_transient_for(parent)
+        self.set_transient_for(parent)
 
-        g15uigconf.configure_checkbox_from_gconf(gconf_client,
+        g15uiGConf.configure_checkbox_from_gconf(gconf_client,
                                                  "/apps/gnome15/%s/reset_usb" % device.uid,
                                                  "Reset",
                                                  False,
                                                  widget_tree,
                                                  True)
-        g15uigconf.configure_spinner_from_gconf(gconf_client,
+        g15uiGConf.configure_spinner_from_gconf(gconf_client,
                                                 "/apps/gnome15/%s/timeout" % device.uid,
                                                 "Timeout",
                                                 10000,
                                                 widget_tree,
                                                 False)
-        g15uigconf.configure_spinner_from_gconf(gconf_client,
+        g15uiGConf.configure_spinner_from_gconf(gconf_client,
                                                 "/apps/gnome15/%s/reset_wait" % device.uid,
                                                 "ResetWait",
                                                 0,
@@ -153,7 +153,7 @@ class Driver(g15driver.AbstractDriver):
         self.device = device
         self.lock = RLock()
         self.connected = False
-        self.conf_client = gconf.client_get_default()
+        self.conf_client = GConf.Client.get_default()
     
     def get_antialias(self):
         return cairo.ANTIALIAS_SUBPIXEL
@@ -205,7 +205,6 @@ class Driver(g15driver.AbstractDriver):
                 
         width = img.get_width()
         height = img.get_height()
-        
         # Create a new flipped, rotated image. The G19 expects the image to scan vertically, but
         # the cairo image surface will be horizontal. Rotating then flipping the image is the
         # quickest way to convert this. 16 bit color (5-6-5) is also required. Unfortunately this format
@@ -221,9 +220,8 @@ class Driver(g15driver.AbstractDriver):
         g15cairo.rotate_around_center(back_context, width, height, 270)
         g15cairo.flip_horizontal(back_context, width, height)
         back_context.set_source_surface(img, 0, 0)
-        back_context.set_operator (cairo.OPERATOR_SOURCE);
+        back_context.set_operator(cairo.OPERATOR_SOURCE)
         back_context.paint()
-        
         if back_surface.get_format() == cairo.FORMAT_ARGB32:
             file_str = StringIO()
             data = back_surface.get_data()
@@ -231,10 +229,10 @@ class Driver(g15driver.AbstractDriver):
                 r = ord(data[i + 2])
                 g = ord(data[i + 1])
                 b = ord(data[i + 0])
-                file_str.write(self._rgb_to_uint16(r, g, b))                
-            buf = array.array('B', file_str.getvalue())   
+                file_str.write(self._rgb_to_uint16(r, g, b))              
+            buf = array.array('B', b'file_str.getvalue()')   
         else:   
-            buf = array.array('B', str(back_surface.get_data()))   
+            buf = back_surface.get_data()
                   
         expected_size = MAX_X * MAX_Y * ( self.get_bpp() / 8 )
         if len(buf) != expected_size:
@@ -361,7 +359,7 @@ class Driver(g15driver.AbstractDriver):
         gBits = gBits if gBits <= 63 else 63
         bBits = bBits if bBits <= 31 else 31        
 
-        valueH = (rBits << 3) | (gBits >> 3)
-        valueL = (gBits << 5) | bBits
+        valueH = (int(rBits) << 3) | (int(gBits) >> 3)
+        valueL = (int(gBits) << 5) | int(bBits)
 
         return chr(valueL & 0xff) + chr(valueH & 0xff)

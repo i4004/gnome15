@@ -14,33 +14,38 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import gnome15.g15locale as g15locale
-_ = g15locale.get_translation("notify-lcd", modfile = __file__).ugettext
+from gnome15 import g15locale
+_ = g15locale.get_translation("notify-lcd", modfile = __file__).gettext
 
-import gnome15.g15screen as g15screen
-import gnome15.util.g15scheduler as g15scheduler
-import gnome15.util.g15uigconf as g15uigconf
-import gnome15.util.g15gconf as g15gconf
-import gnome15.util.g15icontools as g15icontools
-import gnome15.util.g15markup as g15markup
-import gnome15.g15globals as g15globals
-import gnome15.g15theme as g15theme
-import gnome15.g15driver as g15driver
-import gnome15.g15desktop as g15desktop
-import gconf
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk
+from gi.repository import Gdk
+from gi.repository import GObject
+gi.require_version('GConf', '2.0')
+from gi.repository import GConf
+
+
+from gnome15 import g15screen
+from gnome15.util import g15scheduler
+from gnome15.util import g15uigconf
+from gnome15.util import g15gconf
+from gnome15.util import g15icontools
+from gnome15.util import g15markup
+from gnome15 import g15globals
+from gnome15 import g15theme
+from gnome15 import g15driver
+from gnome15 import g15desktop
 import time
 import dbus
 import dbus.service
 import dbus.exceptions
 import os
-import gtk
-import gtk.gdk
 from PIL import Image
 import subprocess
 import tempfile
 import lxml.html
-import Queue
-import gobject
+import queue
 
 from threading import Timer
 from threading import Thread
@@ -91,7 +96,7 @@ def create(gconf_key, gconf_client, screen):
     return G15NotifyLCD(gconf_client, gconf_key, screen)
 
 def show_preferences(parent, driver, gconf_client, gconf_key):
-    widget_tree = gtk.Builder()
+    widget_tree = Gtk.Builder()
     widget_tree.add_from_file(os.path.join(os.path.dirname(__file__), "notify-lcd.ui"))
     dialog = widget_tree.get_object("NotifyLCDDialog")
     dialog.set_transient_for(parent)
@@ -169,7 +174,7 @@ class G15Message():
                 buf += chr(b)
                 
             try :
-                pixbuf = gtk.gdk.pixbuf_new_from_data(buf, gtk.gdk.COLORSPACE_RGB, has_alpha, bits_per_sample, img_width, img_height, img_stride)
+                pixbuf = GdkPixbuf.Pixbuf.new_from_data(buf, GdkPixbuf.Colorspace.RGB, has_alpha, bits_per_sample, img_width, img_height, img_stride)
                 fh, self.embedded_image = tempfile.mkstemp(suffix=".png",prefix="notify-lcd")
                 file = os.fdopen(fh)
                 file.close()
@@ -380,7 +385,7 @@ class G15NotifyLCD():
             if binding.action == g15driver.CLEAR:
                 self.clear()  
             elif binding.action == g15driver.NEXT_PAGE:
-                self.next()  
+                next(self)  
             elif binding.action == g15driver.SELECT:
                 self.action()
     
@@ -472,7 +477,7 @@ class G15NotifyLCD():
                         if m.id == id:
                             self._message_queue.remove(m)
                             if self._service:
-                                gobject.idle_add(self._service.NotificationClosed, id, NOTIFICATION_CLOSED)
+                                GObject.idle_add(self._service.NotificationClosed, id, NOTIFICATION_CLOSED)
                             break
         finally :
             self._lock.release()
@@ -490,7 +495,7 @@ class G15NotifyLCD():
         finally:
             self._lock.release()
     
-    def next(self):
+    def __next__(self):
         logger.debug("User is selected next")
         self._cancel_timer()
         self._move_to_next()
@@ -509,7 +514,7 @@ class G15NotifyLCD():
     ''' 
     Private
     '''     
-    def _configuration_changed(self, client, connection_id, entry, args):
+    def _configuration_changed(self, client, connection_id, entry, *args):
         self._load_configuration()
           
     def _get_theme_properties(self):

@@ -15,7 +15,7 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  
 import gnome15.g15locale as g15locale
-_ = g15locale.get_translation("gnome15").ugettext
+_ = g15locale.get_translation("gnome15").gettext
 
 class NotConnectedException(Exception):
     def __init__(self, message = _("Failed to connect.")):

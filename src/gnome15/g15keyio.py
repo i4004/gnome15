@@ -21,7 +21,7 @@ or XTEST as well as injecting such keys
 
 import gnome15.g15locale as g15locale
 import gnome15.g15uinput as g15uinput
-_ = g15locale.get_translation("macro-recorder", modfile = __file__).ugettext
+_ = g15locale.get_translation("macro-recorder", modfile = __file__).gettext
 
 import time
 import logging

@@ -14,22 +14,23 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  
-import gnome15.g15locale as g15locale
-_ = g15locale.get_translation("clock", modfile = __file__).ugettext
+from gnome15 import g15locale
+_ = g15locale.get_translation("clock", modfile = __file__).gettext
 
-import gnome15.g15text as g15text
-import gnome15.g15driver as g15driver
-import gnome15.g15globals as g15globals
-import gnome15.g15plugin as g15plugin
-import gnome15.g15theme as g15theme
-import gnome15.util.g15scheduler as g15scheduler
-import pango
+from gi.repository import Pango
+
+from gnome15 import g15text
+from gnome15 import g15driver
+from gnome15 import g15globals
+from gnome15 import g15plugin
+from gnome15 import g15theme
+from gnome15.util import g15scheduler
 import os
 import sys
 import traceback
 import gc
-import gnome15.objgraph as objgraph
-import gnome15.g15logging as g15logging
+from gnome15 import objgraph
+from gnome15 import g15logging
 import dbus.service
 
 # Logging
@@ -79,7 +80,7 @@ class Snapshot():
         self.objects = intdict() 
         
 def referents_count(typename):
-    print "%d instances of  type %s. Referents :-" % ( objgraph.count(typename), typename)
+    print("%d instances of  type %s. Referents :-" % ( objgraph.count(typename), typename))
     done = {}
     for r in objgraph.by_type(typename):
         for o in gc.get_referents(r):
@@ -88,10 +89,10 @@ def referents_count(typename):
                 done[name] = True
                 count = objgraph.count(name)
                 if count > 1:
-                    print "   %s  (%d)" % ( name, count )
+                    print("   %s  (%d)" % ( name, count ))
                            
 def referents(typename, max_depth = 1):
-    print "%d instances of  type %s. Referents :-" % ( objgraph.count(typename), typename)
+    print("%d instances of  type %s. Referents :-" % ( objgraph.count(typename), typename))
     for r in objgraph.by_type(typename):
         _do_referents(r, 1, max_depth)
              
@@ -102,12 +103,12 @@ def _do_referents(r, depth, max_depth = 1):
     for o in gc.get_referents(r):
         if not _get_key(o) in EXCLUDED:
             if isinstance(o, dict):
-                print "%s%s" % (dep, _max_len(o, 120))
+                print("%s%s" % (dep, _max_len(o, 120)))
                 if depth < max_depth:
                     _do_referents(o, depth + 1)
 
 def referrers(typename, max_depth = 1):
-    print "%d instances of type %s. Referrers :-" % ( objgraph.count(typename), typename)
+    print("%d instances of type %s. Referrers :-" % ( objgraph.count(typename), typename))
     for r in objgraph.by_type(typename):
         _do_referrers(r, 1, max_depth, [])
                 
@@ -118,13 +119,13 @@ def _do_referrers(r, depth, max_depth, done):
     l = gc.get_referrers(r)
     for o in l:
         if not o == done and not o == l and not _get_key(o) in EXCLUDED and not o in done:
-            print "%s%s" % (dep, _max_len(o, 120))
+            print("%s%s" % (dep, _max_len(o, 120)))
             done.append(o)
             if depth < max_depth:
                 _do_referrers(o, depth + 1, max_depth, done)
                  
 def referrers_count(typename):
-    print "%d instances of type %s. Referrers :-" % ( objgraph.count(typename), typename)
+    print("%d instances of type %s. Referrers :-" % ( objgraph.count(typename), typename))
     done = {}
     for r in objgraph.by_type(typename):
         for o in gc.get_referrers(r):
@@ -133,7 +134,7 @@ def referrers_count(typename):
                 done[name] = True
                 count = objgraph.count(name)
                 if count > 1:
-                    print "   %s  (%d)" % ( name, count )
+                    print("   %s  (%d)" % ( name, count ))
     
 def take_snapshot(snap_objects = True):
     snapshot = Snapshot()
@@ -153,7 +154,7 @@ def compare_snapshots(snapshot1, snapshot2, show_removed = True):
     removed_types = []
     
     # Find everything that has been removed or changed
-    for k, v in snapshot1.stats.iteritems():
+    for k, v in snapshot1.stats.items():
         if not k in snapshot2.stats:
             removed_types.append(k)
         else:
@@ -161,21 +162,21 @@ def compare_snapshots(snapshot1, snapshot2, show_removed = True):
                 changed_types.append(k)
                 
     # Find everything that has been added
-    for k, v in snapshot2.stats.iteritems():
+    for k, v in snapshot2.stats.items():
         if not k in snapshot1.stats:
             new_types.append(k)
             
     # Print some stuff
-    print "New types"
+    print("New types")
     _do_types(snapshot1, snapshot2, new_types)
     
     if show_removed:
-        print "Removed types"
+        print("Removed types")
         for k in removed_types:
-            print "    %-30s" % k
+            print("    %-30s" % k)
             
     # Find the actual objects that have been added for those that have changed
-    print "Changed types"
+    print("Changed types")
     _do_types(snapshot1, snapshot2, changed_types, show_removed)
     
 def _get_key(o):
@@ -189,7 +190,7 @@ def _get_key(o):
                 
 def _do_types(snapshot1, snapshot2, types, show_removed = True):
     for k in types:
-        print "%4s%-30s %10d (was %d)" % ("",k, snapshot2.stats[k], snapshot1.stats[k] if k in snapshot1.stats else 0)
+        print("%4s%-30s %10d (was %d)" % ("",k, snapshot2.stats[k], snapshot1.stats[k] if k in snapshot1.stats else 0))
         old_objects = snapshot1.objects[k] if k in snapshot1.objects else []
         new_objects = snapshot2.objects[k] if k in snapshot2.objects else []
         
@@ -207,7 +208,7 @@ def _do_types(snapshot1, snapshot2, types, show_removed = True):
                     try :
                         _do_obj(x, "Removed")
                     except Exception as e:
-                        print "%12sError! - %s" % ( "", _max_len(str(e), 80) )
+                        print("%12sError! - %s" % ( "", _max_len(str(e), 80) ))
                 
         # Find any objects added
         added = 0
@@ -222,10 +223,10 @@ def _do_types(snapshot1, snapshot2, types, show_removed = True):
                 try :
                     _do_obj(x, "Added")
                 except:
-                    print "%12sError! - %s" % ( "", _max_len(str(e), 80) )
+                    print("%12sError! - %s" % ( "", _max_len(str(e), 80) ))
                     
         if added > 0 or removed > 0:
-            print "%4sAdded %d, Removed %d" % ("", added, removed ) 
+            print("%4sAdded %d, Removed %d" % ("", added, removed )) 
                     
         
             
@@ -235,7 +236,7 @@ def _do_obj(o, s):
         if _get_key(o[0]) in EXCLUDED:
             return
     elif isinstance(o, dict):
-        for k, v in dict(o).iteritems():        
+        for k, v in dict(o).items():        
             if _get_key(k) in EXCLUDED or _get_key(v) in EXCLUDED:
                 return
             break
@@ -246,7 +247,7 @@ def _do_obj(o, s):
                 return
         
     o_str = _max_len(o, 60)
-    print "%12s%8s : %-30s %-60s" % ("",s, _get_key(o), o_str)
+    print("%12s%8s : %-30s %-60s" % ("",s, _get_key(o), o_str))
         
 def _max_len(o, l):
     o_str = str(o)
@@ -287,20 +288,20 @@ class G15DBUSDebugService(dbus.service.Object):
         
     @dbus.service.method(DEBUG_IF_NAME)
     def MostCommonTypes(self):
-        print "Most used objects"
-        print "-----------------"
-        print
+        print("Most used objects")
+        print("-----------------")
+        print()
         objgraph.show_most_common_types(limit=200)
-        print "Job Queues"
-        print "----------"
-        print
+        print("Job Queues")
+        print("----------")
+        print()
         g15scheduler.scheduler.print_all_jobs()
-        print "Threads"
-        print "-------"
-        for threadId, stack in sys._current_frames().items():
-            print "ThreadID: %s" % threadId
+        print("Threads")
+        print("-------")
+        for threadId, stack in list(sys._current_frames().items()):
+            print("ThreadID: %s" % threadId)
             for filename, lineno, name, line in traceback.extract_stack(stack):
-                print '    File: "%s", line %d, in %s' % (filename, lineno, name)
+                print('    File: "%s", line %d, in %s' % (filename, lineno, name))
         
     @dbus.service.method(DEBUG_IF_NAME)
     def ShowGraph(self):
@@ -309,22 +310,22 @@ class G15DBUSDebugService(dbus.service.Object):
     @dbus.service.method(DEBUG_IF_NAME, in_signature='s')
     def PluginObject(self, m):
         for scr in self._service.screens:
-            print "Screen %s" % scr.device.uid
+            print("Screen %s" % scr.device.uid)
             for p in scr.plugins.plugin_map:
                 pmod = scr.plugins.plugin_map[p]
                 if m == '' or m == pmod.id:
-                    print "    %s" % pmod.id
+                    print("    %s" % pmod.id)
                     objgraph.show_backrefs(p, filename='%s-%s' %(scr.device.uid, pmod.id))
         
     @dbus.service.method(DEBUG_IF_NAME, in_signature='s')
     def Objects(self, typename):
-        print "%d instances of type %s. Referrers :-" % ( objgraph.count(typename), typename)
+        print("%d instances of type %s. Referrers :-" % ( objgraph.count(typename), typename))
         done = {}
         for r in objgraph.by_type(typename):
             if isinstance(r, list):
-                print "%s" % str(r[:min(20, len(r))])
+                print("%s" % str(r[:min(20, len(r))]))
             else:
-                print "%s" % str(r)
+                print("%s" % str(r))
         
     @dbus.service.method(DEBUG_IF_NAME, in_signature='s')
     def SetDebugLevel(self, log_level):
@@ -454,8 +455,8 @@ class G15Debug(g15plugin.G15RefreshingPlugin):
                 gap = 8
                 
             self.text.set_canvas(canvas)
-            self.text.set_attributes(text, align = pango.ALIGN_CENTER, font_desc = font_name, \
-                                     font_absolute_size = font_size * pango.SCALE / factor)
+            self.text.set_attributes(text, align = Pango.Alignment.CENTER, font_desc = font_name, \
+                                     font_absolute_size = font_size * Pango.SCALE / factor)
             x, y, width, height = self.text.measure()
             if horizontal: 
                 if self.screen.driver.get_bpp() == 1:

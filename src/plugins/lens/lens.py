@@ -19,18 +19,23 @@ import cairo
 import os
 logger = logging.getLogger(__name__)
 import sys
-from gi.repository import GLib, GObject, Gio
+import gi
+from gi.repository import GObject
+from gi.repository import GLib
+from gi.repository import Gio
+gi.require_version('Dee', '1.0')
 from gi.repository import Dee
 # FIXME: Some weird bug in Dee or PyGI makes Dee fail unless we probe
 #        it *before* we import the Unity module... ?!
 _m = dir(Dee.SequenceModel)
+gi.require_version('Unit', '7.0')
 from gi.repository import Unity
 from gnome15 import g15devices
-from gnome15 import util.g15os as g15os
-from gnome15 import util.g15icontools as g15icontools
+from gnome15.util import g15os 
+from gnome15.util import g15icontools
 from gnome15 import g15screen
 from gnome15 import g15globals
-from cStringIO import StringIO
+from io import StringIO
 import base64
 
 #
@@ -83,7 +88,7 @@ class G15Lens():
         result = result.unpack()[0]
     
         if result != 1 :
-            print >> sys.stderr, "Failed to own name %s. Bailing out." % BUS_NAME
+            print("Failed to own name %s. Bailing out." % BUS_NAME, file=sys.stderr)
             raise Exception("Failed to own name %s. Bailing out." % BUS_NAME)
         
         self._lens = Unity.Lens.new("/org/gnome15/Gnome15Lens", "Gnome15Lens")
@@ -111,11 +116,11 @@ class G15Lens():
         self._lens.export ();
     
     def do_activate(self, *args):
-        print "activate:", args
+        print("activate:", args)
         return Unity.ActivationStatus.ACTIVATED_HIDE_DASH
         
     def _activation(self, uri):
-        print uri
+        print(uri)
         return True
         
     def screen_removed(self, screen):
@@ -161,7 +166,7 @@ class G15Lens():
     Private
     """
     def _on_activation(self, uri, callback, callback_target):
-        print "URI %s, %s, %s" % ( uri, str(callback), str(callback_target))
+        print("URI %s, %s, %s" % ( uri, str(callback), str(callback_target)))
     
     def _add_screen(self, screen):
         listener = MenuScreenChangeListener(self, screen)
@@ -194,11 +199,11 @@ class G15Lens():
         # Just the same as the normal groups
         self._on_groups_synchronized (global_groups_model)
     
-    def _on_search_changed (self, *args):        
+    def _on_search_changed (self, *args):
         search = self.get_search_string()
         results = self._entry.props.results_model
         
-        print "Search changed to: '%s'" % search
+        print("Search changed to: '%s'" % search)
         
         self._update_results_model (search, results)
         self.search_finished()
@@ -207,7 +212,7 @@ class G15Lens():
         search = self.get_global_search_string()
         results = self._entry.props.global_renderer_info.props.results_model
         
-        print "Global search changed to: '%s'" % search
+        print("Global search changed to: '%s'" % search)
         
         self._update_results_model (search, results)
         self.global_search_finished()
@@ -215,14 +220,14 @@ class G15Lens():
     def _update_results_model (self, search, model):
         model.clear ()
         search = search.lower()
-        print "Search> %s" % search
+        print("Search> %s" % search)
         for listener in self.listeners:
-            print "   L[%s]" % str(listener)
+            print("   L[%s]" % str(listener))
             for page in listener.screen.pages:
-                if len(search) == 0 or search in page.title.lower(): 
+                if len(search) == 0 or search in page.title.lower():
                     icon_hint = listener._get_page_filename(page)
                     uri = "gnome15://%s" % base64.encodestring(page.id)
-                    print "      URI %s" % uri
+                    print("      URI %s" % uri)
                     model.append (uri,    # uri
                                   icon_hint,        # string formatted GIcon
                                   CATEGORY_PAGES,   # numeric group id
@@ -231,7 +236,7 @@ class G15Lens():
                                   page.title,       # comment,
                                   uri)              # FIXME WHATSTHIS?
             
-        print str(model)
+        print(str(model))
     
     def deactivate(self):
         pass
@@ -247,10 +252,10 @@ class MenuScreenChangeListener(g15screen.ScreenChangeAdapter):
             self._add_page(page)
         
     def new_page(self, page):
-        print "Adding page %s for screen %s" % (page.id, self.screen.device.uid)
+        print("Adding page %s for screen %s" % (page.id, self.screen.device.uid))
         self._add_page(page)
         
-    def title_changed(self, page, title):        
+    def title_changed(self, page, title):
         self._update_page(page)
     
     def del_page(self, page):
@@ -273,7 +278,7 @@ class MenuScreenChangeListener(g15screen.ScreenChangeAdapter):
             thumb_canvas = cairo.Context(img)
             try :
                 if page.thumbnail_painter(thumb_canvas, self.screen.height, True):
-                    filename = self._get_page_filename(page) 
+                    filename = self._get_page_filename(page)
                     logger.info("Writing thumbnail to %s", filename)
                     img.write_to_png(filename)
             except Exception as e:

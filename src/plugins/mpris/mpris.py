@@ -16,27 +16,27 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import gnome15.g15locale as g15locale
-_ = g15locale.get_translation("mpris", modfile = __file__).ugettext
+from gnome15 import g15locale
+_ = g15locale.get_translation("mpris", modfile = __file__).gettext
 
-import gnome15.g15screen as g15screen
-import gnome15.g15driver as g15driver
-import gnome15.util.g15convert as g15convert
-import gnome15.util.g15scheduler as g15scheduler
-import gnome15.util.g15pythonlang as g15pythonlang
-import gnome15.util.g15cairo as g15cairo
-import gnome15.util.g15icontools as g15icontools
-import gnome15.g15theme as g15theme
-import gnome15.g15plugin as g15plugin
-import gnome15.g15devices as g15devices
-import gnome15.g15actions as g15actions
+from gnome15 import g15screen
+from gnome15 import g15driver
+from gnome15.util import g15convert
+from gnome15.util import g15scheduler
+from gnome15.util import g15pythonlang
+from gnome15.util import g15cairo
+from gnome15.util import g15icontools
+from gnome15 import g15theme
+from gnome15 import g15plugin
+from gnome15 import g15devices
+from gnome15 import g15actions
 import dbus
 import os
 import time
 
 import xdg.Mime as mime
 import xdg.BaseDirectory
-import urllib
+import urllib.request, urllib.parse, urllib.error
 
 # Logging
 import logging
@@ -314,7 +314,7 @@ class AbstractMPRISPlayer():
                 new_cover_uri = mime_icon  
         if new_cover_uri != None:
             try :            
-                new_cover_uri = "file://" + urllib.pathname2url(new_cover_uri)
+                new_cover_uri = "file://" + urllib.request.pathname2url(new_cover_uri)
             except Exception as e:
                 logger.debug("Error getting default cover, using None", exc_info = e)
                 new_cover_uri = None
@@ -711,7 +711,7 @@ class G15MPRIS(g15plugin.G15Plugin):
     def deactivate(self):
         g15plugin.G15Plugin.deactivate(self)
         self.screen.key_handler.action_listeners.remove(self)
-        for key in self.players.keys():
+        for key in list(self.players.keys()):
             self.players[key].stop()
         g15scheduler.stop_queue("mprisDataQueue-%s" % self.screen.device.uid)
         self.session_bus.remove_signal_receiver(self._name_owner_changed,
@@ -725,13 +725,13 @@ class G15MPRIS(g15plugin.G15Plugin):
         vis_page = self.screen.get_visible_page()
         
         # First send to the visible player
-        for p in self.players.values():
+        for p in list(self.players.values()):
             if vis_page == p.page:                
                 return p.action_performed(binding)
             
         # Now send to just the first player
         if len(self.players) > 0:
-            return self.players.values()[0].action_performed(binding)
+            return list(self.players.values())[0].action_performed(binding)
             
     def _name_owner_changed(self, name, old_owner, new_owner):
         logger.debug("Name owner changed for %s from %s to %s", name, old_owner, new_owner)

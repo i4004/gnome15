@@ -14,9 +14,9 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  
-import gnome15.g15theme as g15theme
-import gnome15.g15driver as g15driver
-import gnome15.g15profile as g15profile
+from gnome15 import g15theme
+from gnome15 import g15driver
+from gnome15 import g15profile
 import os
 import locale
 

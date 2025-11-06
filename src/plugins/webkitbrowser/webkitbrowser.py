@@ -16,12 +16,15 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  
-import gnome15.g15driver as g15driver
-import gnome15.g15gtk  as g15gtk
-import gnome15.g15plugin  as g15plugin
-import gtk
-import gobject
-import webkit
+import gi
+from gnome15 import g15driver
+from gnome15 import g15gtk
+from gnome15 import g15plugin
+gi.require_version('Gtk','3.0')
+from gi.repository import Gtk
+from gi.repository import GObject
+gi.require_version('WebKit2','4.0')
+from gi.repository import WebKit2
 
 # Plugin details - All of these must be provided
 id="webkitbrowser"
@@ -46,9 +49,9 @@ class G15WebkitBrowser(g15plugin.G15PagePlugin):
     
     def populate_page(self):
         g15plugin.G15PagePlugin.populate_page(self)
-        self.window = g15gtk.G15OffscreenWindow("offscreenWindow")
+        self.window = g15Gtk.G15OffscreenWindow("offscreenWindow")
         self.page.add_child(self.window)
-        gobject.idle_add(self._create_browser)
+        GObject.idle_add(self._create_browser)
 
     def activate(self):
         g15plugin.G15PagePlugin.activate(self)
@@ -61,10 +64,10 @@ class G15WebkitBrowser(g15plugin.G15PagePlugin):
     def action_performed(self, binding):
         if self.page is not None and self.page.is_visible(): 
             if binding.action == g15driver.PREVIOUS_PAGE:
-                gobject.idle_add(self._scroll_up)
+                GObject.idle_add(self._scroll_up)
                 return True
             elif binding.action == g15driver.NEXT_PAGE:
-                gobject.idle_add(self._scroll_down)
+                GObject.idle_add(self._scroll_down)
                 return True
         
     '''
@@ -72,9 +75,9 @@ class G15WebkitBrowser(g15plugin.G15PagePlugin):
     '''
     
     def get_theme_properties(self):
-        return dict(g15plugin.G15PagePlugin.get_theme_properties(self).items() + {
+        return dict(list(g15plugin.G15PagePlugin.get_theme_properties(self).items()) + list({
             "url" : "www.somewhere.com"
-        }.items())
+        }.items()))
         
     def _scroll_up(self):
         adj = self.scroller.get_vadjustment()
@@ -87,8 +90,8 @@ class G15WebkitBrowser(g15plugin.G15PagePlugin):
         self.screen.redraw(self.page)
     
     def _create_browser(self):
-        view = webkit.WebView()
-        self.scroller = gtk.ScrolledWindow()
+        view = WebKit2.WebView.new()
+        self.scroller = Gtk.ScrolledWindow()
         self.scroller.add(view)    
         view.open("http://www.youtube.com")
         self.window.set_content(self.scroller)

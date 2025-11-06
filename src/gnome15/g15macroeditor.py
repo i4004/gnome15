@@ -19,26 +19,27 @@ Manages the UI for editing a single macro.
 """
 
 import gnome15.g15locale as g15locale
-_ = g15locale.get_translation("gnome15").ugettext
+_ = g15locale.get_translation("gnome15").gettext
 
 
-import g15globals
-import g15profile
-import util.g15scheduler as g15scheduler
-import util.g15gconf as g15gconf
-import util.g15icontools as g15icontools
-import g15uinput
-import g15devices
-import g15driver
-import g15keyio
-import g15actions
-import pygtk
-pygtk.require('2.0')
-import gtk
-import gobject
+from . import g15globals
+from . import g15profile
+from gnome15.util import g15scheduler as g15scheduler
+from gnome15.util import g15gconf as g15gconf
+from gnome15.util import g15icontools as g15icontools
+from . import g15uinput
+from . import g15devices
+from . import g15driver
+from . import g15keyio
+from . import g15actions
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk
+from gi.repository import GLib
+from gi.repository import GObject
+from gi.repository import Pango
+from gi.repository import GConf
 import os
-import pango
-import gconf
 
 import logging
 logger = logging.getLogger(__name__)
@@ -57,8 +58,8 @@ class G15MacroEditor():
         and set_macro() after constructions to populate the macro key buttons
         and the other fields.
         """
-        self.__gconf_client = gconf.client_get_default()
-        self.__widget_tree = gtk.Builder()
+        self.__gconf_client = GConf.Client.get_default()
+        self.__widget_tree = Gtk.Builder()
         self.__widget_tree.set_translation_domain("g15-macroeditor")
         self.__widget_tree.add_from_file(os.path.join(g15globals.ui_dir, "macro-editor.ui"))
         self.__window = self.__widget_tree.get_object("EditMacroDialog")
@@ -122,23 +123,23 @@ class G15MacroEditor():
             # Build the G-Key selection widget
             if self.__rows:
                 keys_frame.remove(self.__rows)
-            self.__rows = gtk.VBox()
+            self.__rows = Gtk.VBox()
             self.__rows.set_spacing(4)
             self.__key_buttons = []
             for row in self.__driver.get_key_layout():
-                hbox = gtk.HBox()
+                hbox = Gtk.HBox()
                 hbox.set_spacing(4)
                 for key in row:
                     key_name = g15driver.get_key_names([ key ])
-                    g_button = gtk.ToggleButton(" ".join(key_name))
+                    g_button = Gtk.ToggleButton(" ".join(key_name))
                     g_button.key = key
                     key_active = key in self.editing_macro.keys
                     g_button.set_active(key_active)
                     self.__set_button_style(g_button)
                     g_button.connect("toggled", self._toggle_key, key, self.editing_macro)
                     self.__key_buttons.append(g_button)
-                    hbox.pack_start(g_button, True, True)
-                self.__rows.pack_start(hbox, False, False)
+                    hbox.pack_start(g_button, True, True,0)
+                self.__rows.pack_start(hbox, False, False,0)
             keys_frame.add(self.__rows)     
             keys_frame.show_all()
             
@@ -175,7 +176,7 @@ class G15MacroEditor():
                         self.__select_tree_row(self.__action_tree, index)
                         break
                 
-            self.__text_buffer = gtk.TextBuffer()        
+            self.__text_buffer = Gtk.TextBuffer()        
             self.__text_buffer.connect("changed", self._macro_script_changed)    
             self.__macro_script.set_buffer(self.__text_buffer)
                 
@@ -231,7 +232,7 @@ class G15MacroEditor():
                 self.__save_macro(self.editing_macro)
         
     def _macro_script_changed(self, text_buffer):
-        self.editing_macro.macro = text_buffer.get_text(text_buffer.get_start_iter(), text_buffer.get_end_iter())
+        self.editing_macro.macro = text_buffer.get_text(text_buffer.get_start_iter(), text_buffer.get_end_iter(), false)
         self.__save_macro(self.editing_macro)
         
     def _show_script_editor(self, widget):
@@ -284,20 +285,20 @@ class G15MacroEditor():
         self.__save_command()
         
     def _browse_for_command(self, widget):
-        dialog = gtk.FileChooserDialog(_("Open.."),
+        dialog = Gtk.FileChooserDialog(_("Open.."),
                                None,
-                               gtk.FILE_CHOOSER_ACTION_OPEN,
-                               (gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
-                                gtk.STOCK_OPEN, gtk.RESPONSE_OK))
-        dialog.set_default_response(gtk.RESPONSE_OK)
-        file_filter = gtk.FileFilter()
+                               Gtk.FileChooserAction.OPEN,
+                               (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+                                Gtk.STOCK_OPEN, Gtk.ResponseType.OK))
+        dialog.set_default_response(Gtk.ResponseType.OK)
+        file_filter = Gtk.FileFilter()
         file_filter.set_name(_("All files"))
         file_filter.add_pattern("*")
         dialog.add_filter(file_filter)
         response = dialog.run()
-        while gtk.events_pending():
-            gtk.main_iteration(False) 
-        if response == gtk.RESPONSE_OK:
+        while Gtk.events_pending():
+            Gtk.main_iteration(False) 
+        if response == Gtk.ResponseType.OK:
             self.__command.set_text(dialog.get_filename())
         dialog.destroy()
         return False
@@ -557,7 +558,7 @@ class G15MacroEditor():
         """
         val = self.__validate_macro(keys)
         if val == IN_USE:
-            self.__macro_infobar.set_message_type(gtk.MESSAGE_ERROR)
+            self.__macro_infobar.set_message_type(Gtk.MessageType.ERROR)
             self.__macro_warning_label.set_text(_("This key combination is already in use with " + \
                                               "another macro. Please choose a different key or combination of keys"))
             self.__macro_infobar.set_visible(True)
@@ -566,7 +567,7 @@ class G15MacroEditor():
             if self.close_button is not None:
                 self.close_button.set_sensitive(False)
         elif val == RESERVED_FOR_ACTION:
-            self.__macro_infobar.set_message_type(gtk.MESSAGE_WARNING)
+            self.__macro_infobar.set_message_type(Gtk.MessageType.WARNING)
             self.__macro_warning_label.set_text(_("This key combination is reserved for use with an action. You " + \
                                               "may use it, but the results are undefined."))
             self.__macro_infobar.set_visible(True)
@@ -574,7 +575,7 @@ class G15MacroEditor():
             if self.close_button is not None:
                 self.close_button.set_sensitive(True)      
         elif val == NO_KEYS:     
-            self.__macro_infobar.set_message_type(gtk.MESSAGE_WARNING)
+            self.__macro_infobar.set_message_type(Gtk.MessageType.WARNING)
             self.__macro_warning_label.set_text(_("You have not chosen a macro key to assign the action to."))
             self.__macro_infobar.set_visible(True)
             self.__macro_infobar.show_all()
@@ -591,15 +592,15 @@ class G15MacroEditor():
         macro, such as conflicts. The component is added to a placeholder in
         the Glade file
         """
-        self.__macro_infobar = gtk.InfoBar()    
+        self.__macro_infobar = Gtk.InfoBar()    
         self.__macro_infobar.set_size_request(-1, -1)   
-        self.__macro_warning_label = gtk.Label()
+        self.__macro_warning_label = Gtk.Label()
         self.__macro_warning_label.set_line_wrap(True)
         self.__macro_warning_label.set_width_chars(60)
         content = self.__macro_infobar.get_content_area()
-        content.pack_start(self.__macro_warning_label, True, True)
+        content.pack_start(self.__macro_warning_label, True, True,0)
         
-        self.__macro_warning_box.pack_start(self.__macro_infobar, True, True)
+        self.__macro_warning_box.pack_start(self.__macro_infobar, True, True,0)
         self.__macro_infobar.set_visible(False)
             
     def __set_button_style(self, button):
@@ -609,17 +610,17 @@ class G15MacroEditor():
         Keyword arguments:
         button        -- button widget
         """
-        font = pango.FontDescription("Sans 10")
+        font = Pango.FontDescription("Sans 10")
         if button.get_use_stock():
-            label = button.child.get_children()[1]
-        elif isinstance(button.child, gtk.Label):
-            label = button.child
+            label = button.get_child().get_children()[1]
+        elif isinstance(button.get_child(), Gtk.Label):
+            label = button.get_child()
         else:
             raise ValueError("button does not have a label")
         if button.get_active():
-            font.set_weight(pango.WEIGHT_HEAVY)
+            font.set_weight(Pango.Weight.HEAVY)
         else:
-            font.set_weight(pango.WEIGHT_MEDIUM)
+            font.set_weight(Pango.Weight.MEDIUM)
         label.modify_font(font)
         
 OP_ICONS = { 'delay' : 'gtk-media-pause',
@@ -638,13 +639,13 @@ class G15MacroScriptEditor():
         
         self.__gconf_client = gconf_client
         self.__driver = driver
-        self.__clipboard = gtk.clipboard_get(gtk.gdk.SELECTION_CLIPBOARD)
+        self.__clipboard = Gtk.clipboard_get(Gdk.SELECTION_CLIPBOARD)
         
         self.__recorder = g15keyio.G15KeyRecorder(self.__driver)
         self.__recorder.on_stop = self._on_stop_record
         self.__recorder.on_add = self._on_record_add
         
-        self.__widget_tree = gtk.Builder()
+        self.__widget_tree = Gtk.Builder()
         self.__widget_tree.set_translation_domain("g15-macroeditor")
         self.__widget_tree.add_from_file(os.path.join(g15globals.ui_dir, "script-editor.ui"))
         self._load_objects()
@@ -682,17 +683,17 @@ class G15MacroScriptEditor():
                 if op in OP_ICONS:
                     icon = OP_ICONS[op]
                     icon_path = g15icontools.get_icon_path(icon, 24)
-                    self.__script_model.append([gtk.gdk.pixbuf_new_from_file(icon_path), val, op, True])
+                    self.__script_model.append([GdkPixbuf.Pixbuf.new_from_file(icon_path), val, op, True])
                     
         self._validate_script()
 
     def _validate_script(self):
         msg =  self._do_validate_script()
         if msg:
-            self._show_message(gtk.MESSAGE_ERROR, msg)
+            self._show_message(Gtk.MessageType.ERROR, msg)
             self.__save_button.set_sensitive(False)
         else:
-            self.__infobar.hide_all()
+            self.__infobar.hide()
             self.__save_button.set_sensitive(True)
                             
     def _do_validate_script(self):
@@ -718,14 +719,14 @@ class G15MacroScriptEditor():
                     return "Goto <b>%s</b> uses a label that doesn't exist" % val
                 
         if len(pressed) > 0:
-            return "The script leaves <b>%s</b> pressed on completion" % ",".join(pressed.keys())
+            return "The script leaves <b>%s</b> pressed on completion" % ",".join(list(pressed.keys()))
         
         return None
         
     def run(self):
         response = self.__window.run()
         self.__window.hide()
-        if response == gtk.RESPONSE_OK:
+        if response == Gtk.ResponseType.OK:
             buf = ""
             for p in self.__macros:
                 if not buf == "":
@@ -735,27 +736,27 @@ class G15MacroScriptEditor():
             return True
         
     def _add_info_box(self):
-        self.__infobar = gtk.InfoBar()    
+        self.__infobar = Gtk.InfoBar()    
         self.__infobar.set_size_request(-1, 32)   
-        self.__warning_label = gtk.Label()
+        self.__warning_label = Gtk.Label()
         self.__warning_label.set_size_request(400, -1)
         self.__warning_label.set_line_wrap(True)
         self.__warning_label.set_alignment(0.0, 0.0)
-        self.__warning_image = gtk.Image()  
+        self.__warning_image = Gtk.Image()  
         content = self.__infobar.get_content_area()
-        content.pack_start(self.__warning_image, False, False)
-        content.pack_start(self.__warning_label, True, True)
-        self.__info_box_area.pack_start(self.__infobar, False, False)
-        self.__infobar.hide_all() 
+        content.pack_start(self.__warning_image, False, False,0)
+        content.pack_start(self.__warning_label, True, True,0)
+        self.__info_box_area.pack_start(self.__infobar, False, False,0)
+        self.__infobar.hide() 
         
     def _show_message(self, message_type, text):
-        print "Showing message",text
+        print("Showing message",text)
         self.__infobar.set_message_type(message_type)
         self.__warning_label.set_text(text)
         self.__warning_label.set_use_markup(True)
 
-        if type == gtk.MESSAGE_WARNING:
-            self.__warning_image.set_from_stock(gtk.STOCK_DIALOG_WARNING, gtk.ICON_SIZE_DIALOG)
+        if type == Gtk.MessageType.WARNING:
+            self.__warning_image.set_from_stock(Gtk.STOCK_DIALOG_WARNING, Gtk.IconSize.DIALOG)
         
 #        self.main_window.check_resize()        
         self.__infobar.show_all()
@@ -795,7 +796,7 @@ class G15MacroScriptEditor():
                 self.__key_press_model.append([n])
         
     def _configure_widgets(self):
-        self.__script_tree.get_selection().set_mode(gtk.SELECTION_MULTIPLE)
+        self.__script_tree.get_selection().set_mode(Gtk.SelectionMode.MULTIPLE)
         tree_selection = self.__script_tree.get_selection()
         tree_selection.connect("changed", self._on_selection_changed)
         
@@ -849,7 +850,7 @@ class G15MacroScriptEditor():
             self._rebuild_model()   
         
     def _on_record_add(self, pr, key):
-        gobject.idle_add(self._set_available)
+        GLib.idle_add(self._set_available)
         
     def _on_selection_changed(self, widget):
         self.__edit_selected_values.set_sensitive(self._unique_selected_types() == 1)
@@ -875,7 +876,7 @@ class G15MacroScriptEditor():
         self.__set_value_dialog.set_transient_for(self.__window)
         response = self.__set_value_dialog.run()
         self.__set_value_dialog.hide()
-        if response == gtk.RESPONSE_OK:
+        if response == Gtk.ResponseType.OK:
             tree_selection = self.__script_tree.get_selection()
             model, selected_paths = tree_selection.get_selected_rows()
             for p in selected_paths:
@@ -889,17 +890,17 @@ class G15MacroScriptEditor():
         return op[:1].upper() + op[1:]
     
     def _on_browse_command(self, widget):
-        dialog = gtk.FileChooserDialog("Choose Command..",
+        dialog = Gtk.FileChooserDialog("Choose Command..",
                                None,
-                               gtk.FILE_CHOOSER_ACTION_OPEN,
-                               (gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
-                                gtk.STOCK_SAVE, gtk.RESPONSE_OK))
-        dialog.set_default_response(gtk.RESPONSE_OK)
+                               Gtk.FileChooserAction.OPEN,
+                               (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+                                Gtk.STOCK_SAVE, Gtk.ResponseType.OK))
+        dialog.set_default_response(Gtk.ResponseType.OK)
         dialog.set_transient_for(self.__window)
         dialog.set_filename(self.__command.get_text())
         response = dialog.run()
         dialog.hide()
-        if response == gtk.RESPONSE_OK:
+        if response == Gtk.ResponseType.OK:
             self.__command.set_text(dialog.get_filename())
     
     def _on_new_goto(self, widget):
@@ -914,7 +915,7 @@ class G15MacroScriptEditor():
         dialog.set_transient_for(self.__window)
         response = dialog.run()
         dialog.hide()
-        if response == gtk.RESPONSE_OK:            
+        if response == Gtk.ResponseType.OK:            
             self._insert_macro("%s %s" % ( self._format_op("goto"), self.__goto_label_model[self.__goto_label.get_active()][0]))
     
     def _on_new_label(self, widget):
@@ -922,7 +923,7 @@ class G15MacroScriptEditor():
         dialog.set_transient_for(self.__window)
         response = dialog.run()
         dialog.hide()
-        if response == gtk.RESPONSE_OK:            
+        if response == Gtk.ResponseType.OK:            
             self._insert_macro("%s %s" % ( self._format_op("label"), self.__label.get_text()))
     
     def _on_new_execute(self, widget):
@@ -930,7 +931,7 @@ class G15MacroScriptEditor():
         dialog.set_transient_for(self.__window)
         response = dialog.run()
         dialog.hide()
-        if response == gtk.RESPONSE_OK:            
+        if response == Gtk.ResponseType.OK:            
             self._insert_macro("%s %s" % ( self._format_op("execute"), self.__command.get_text()))
             
     
@@ -941,7 +942,7 @@ class G15MacroScriptEditor():
             self.__wait_combo.set_active(0)
         response = dialog.run()
         dialog.hide()
-        if response == gtk.RESPONSE_OK:
+        if response == Gtk.ResponseType.OK:
             self._insert_macro("%s %s" % ( self._format_op("wait"), self.__wait_model[self.__wait_combo.get_active()][0])) 
     
     def _on_add_delay(self, widget):        
@@ -950,15 +951,15 @@ class G15MacroScriptEditor():
         response = dialog.run()
         dialog.hide()
         self._stop_recorder()
-        if response == gtk.RESPONSE_OK:
+        if response == Gtk.ResponseType.OK:
             self._insert_macro("%s %s" % ( self._format_op("delay"), int(self.__delay_adjustment.get_value())) )
             
     def _on_rows_reordered(self, model, path, iter, new_order):
-        print "reorder"
+        print("reorder")
         # The model will have been updated, so update our text base list from that
         for index,row in enumerate(self._script.model):
             x = self._format_row(row)
-            print x
+            print(x)
             self.__macros[index] = x
         self._rebuild_model()
             
@@ -981,7 +982,7 @@ class G15MacroScriptEditor():
         self.__recorder.stop_record()
         
     def _on_stop_record(self, recorder): 
-        gobject.idle_add(self._set_available)
+        GLib.idle_add(self._set_available)
         
     def _stop_recorder(self):
         if self.__recorder.is_recording():
@@ -1000,7 +1001,7 @@ class G15MacroScriptEditor():
         dialog.hide()
         if self.__recorder.is_recording():
             self.__recorder.stop_record()
-        if response == gtk.RESPONSE_OK:
+        if response == Gtk.ResponseType.OK:
             i = self._get_insert_index()
             for op, value in self.__recorder.script:
                 if len(self.__recorder.script) > 0:
@@ -1019,7 +1020,7 @@ class G15MacroScriptEditor():
         dialog.set_transient_for(self.__window)
         response = dialog.run()
         dialog.hide()
-        if response == gtk.RESPONSE_OK:
+        if response == Gtk.ResponseType.OK:
             tree_selection = self.__script_tree.get_selection()
             _, selected_paths = tree_selection.get_selected_rows()
             for p in reversed(selected_paths):
@@ -1099,6 +1100,6 @@ class G15MacroScriptEditor():
 if __name__ == "__main__":
     me = G15MacroEditor()
     if (me.window):
-        me.window.connect("destroy", gtk.main_quit)
+        me.window.connect("destroy", Gtk.main_quit)
         me.window.run()
         me.window.hide()

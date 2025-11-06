@@ -14,14 +14,15 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  
-import gobject
-import g15globals
+from gi.repository import GObject
+from gi.repository import GLib
+from gnome15 import g15globals
 import signal
 import dbus.service
 import os.path
-import g15devices
-import g15driver
-import util.g15scheduler as g15scheduler
+from . import g15devices
+from . import g15driver
+from gnome15.util import g15scheduler as g15scheduler
 
 # Logging
 import logging
@@ -80,7 +81,7 @@ class SystemService(dbus.service.Object):
         
     @dbus.service.method(IF_NAME, in_signature='s', out_signature='as')
     def GetLights(self, device):        
-        return self._controller.devices[device].leds.keys()
+        return list(self._controller.devices[device].leds.keys())
         
     @dbus.service.method(IF_NAME, in_signature='ss', out_signature='n')
     def GetMaxLight(self, device, light):
@@ -165,8 +166,8 @@ class G15SystemServiceController():
             signal.signal(signal.SIGINT, self.sigint_handler)
             signal.signal(signal.SIGTERM, self.sigterm_handler)
             
-        self._loop = gobject.MainLoop()
-        gobject.idle_add(self._start_service)
+        self._loop = GObject.MainLoop()
+        GLib.idle_add(self._start_service)
         
     def stop(self):
         self._loop.quit()

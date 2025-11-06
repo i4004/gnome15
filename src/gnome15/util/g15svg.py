@@ -20,7 +20,7 @@ SVG utilities
 '''
 
 import cairo
-import g15pythonlang
+from . import g15pythonlang
 
 # Logging
 import logging

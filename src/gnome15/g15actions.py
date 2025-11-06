@@ -22,7 +22,7 @@ Additionally, plugins may register new actions that may be bound to macro
 keys. 
 """
 
-import g15driver
+from . import g15driver
 
 """
 Some screen related actions that may be mapped to additional keys
@@ -67,6 +67,27 @@ class ActionBinding():
         self.state = state
         self.keys = keys
         
-    def __cmp__(self, other):
-        f = cmp(self.keys, other.keys)
-        return f if f != 0 else cmp(self.state, other.state)
+#    def __cmp__(self, other):
+#        f = cmp(self.keys, other.keys)
+#        return f if f != 0 else cmp(self.state, other.state)
+
+    def __eq__(self, other):
+        return ((self.keys,self.state) == (other.keys,other.state))
+
+    def __ne__(self, other):
+        return not (self == other)
+
+    def __lt__(self, other):
+        return ((self.keys,self.state) < (other.keys,other.state))
+
+    def __le__(self, other):
+        return ((self.keys,self.state) <= (other.keys,other.state))
+
+    def __gt__(self, other):
+        return ((self.keys,self.state) > (other.keys,other.state))
+
+    def __ge__(self, other):
+        return ((self.keys,self.state) >= (other.keys,other.state))
+
+    def __repr__(self):
+        return "Key: %s, State: %d" % (self.keys, self.state)

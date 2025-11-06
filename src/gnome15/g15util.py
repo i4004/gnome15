@@ -20,18 +20,18 @@ This file only exists to keep compatibility with 3rd party plugins.
 It has been splitted into several files
 '''
 
-import util.g15cairo as g15cairo
-import util.g15convert as g15convert
-import util.g15gconf as g15gconf
-import util.g15icontools as g15icontools
-import util.g15markup as g15markup
-import util.g15os as g15os
-import util.g15pythonlang as g15pythonlang
-import util.g15scheduler as g15scheduler
-import util.g15svg as g15svg
-import util.g15uigconf as g15uigconf
-import g15notify
-import g15driver
+from gnome15.util import g15cairo as g15cairo
+from gnome15.util import g15convert as g15convert
+from gnome15.util import g15gconf as g15gconf
+from gnome15.util import g15icontools as g15icontools
+from gnome15.util import g15markup as g15markup
+from gnome15.util import g15os as g15os
+from gnome15.util import g15pythonlang as g15pythonlang
+from gnome15.util import g15scheduler as g15scheduler
+from gnome15.util import g15svg as g15svg
+from gnome15.util import g15uigconf as g15uigconf
+from . import g15notify
+from . import g15driver
 
 
 def execute_for_output(cmd):
@@ -47,13 +47,13 @@ def call_if_exists(obj, function_name, *args):
     g15pythonlang.call_if_exists(obj, function_name, args)
 
 def configure_colorchooser_from_gconf(gconf_client, gconf_key, widget_id, default_value, widget_tree, default_alpha = None):
-    g15uigconf.configure_colorchooser_from_gconf(gconf_client, gconf_key, widget_id, default_value, widget_tree, default_alpha)
+    g15uiGConf.configure_colorchooser_from_gconf(gconf_client, gconf_key, widget_id, default_value, widget_tree, default_alpha)
 
 def to_cairo_rgba(gconf_client, key, default):
     return g15gconf.get_cairo_rgba_or_default(gconf_client, key, default)
 
 def color_changed(widget, gconf_client, key):
-    g15uigconf.color_changed(widget, gconf_client, key)
+    g15uiGConf.color_changed(widget, gconf_client, key)
 
 def rgb_to_string(rgb):
     return g15convert.rgb_to_string(rgb)
@@ -74,49 +74,49 @@ def to_color(rgb):
     return g15convert.to_color(rgb)
 
 def spinner_changed(widget, gconf_client, key, model, decimal = False):
-    g15uigconf.spinner_changed(widget, gconf_client, key, model, decimal)
+    g15uiGConf.spinner_changed(widget, gconf_client, key, model, decimal)
 
 def configure_spinner_from_gconf(gconf_client, gconf_key, widget_id, default_value, widget_tree, decimal = False):
-    g15uigconf.configure_spinner_from_gconf(gconf_client, gconf_key, widget_id, default_value, widget_tree, decimal)
+    g15uiGConf.configure_spinner_from_gconf(gconf_client, gconf_key, widget_id, default_value, widget_tree, decimal)
 
 def configure_combo_from_gconf(gconf_client, gconf_key, widget_id, default_value, widget_tree):
-    g15uigconf.configure_combo_from_gconf(gconf_client, gconf_key, widget_id, default_value, widget_tree)
+    g15uiGConf.configure_combo_from_gconf(gconf_client, gconf_key, widget_id, default_value, widget_tree)
 
 def combo_box_changed(widget, gconf_client, key, model, default_value):
-    g15uigconf.combo_box_changed(widget, gconf_client, key, model, default_value)
+    g15uiGConf.combo_box_changed(widget, gconf_client, key, model, default_value)
 
-def boolean_conf_value_change(client, connection_id, entry, args):
-    g15uigconf.boolean_conf_value_change(client, connection_id, entry, args)
+def boolean_conf_value_change(client, connection_id, entry, *args):
+    g15uiGConf.boolean_conf_value_change(client, connection_id, entry, args)
 
-def text_conf_value_change(client, connection_id, entry, args):
-    g15uigconf.text_conf_value_change(client, connection_id, entry, args)
+def text_conf_value_change(client, connection_id, entry, *args):
+    g15uiGConf.text_conf_value_change(client, connection_id, entry, args)
 
-def radio_conf_value_change(client, connection_id, entry, args):
-    g15uigconf.radio_conf_value_change(client, connection_id, entry, args)
+def radio_conf_value_change(client, connection_id, entry, *args):
+    g15uiGConf.radio_conf_value_change(client, connection_id, entry, args)
 
 def configure_checkbox_from_gconf(gconf_client, gconf_key, widget_id, default_value, widget_tree, watch_changes = False):
-    return g15uigconf.configure_checkbox_from_gconf(gconf_client, gconf_key, widget_id, default_value, widget_tree, watch_changes)
+    return g15uiGConf.configure_checkbox_from_gconf(gconf_client, gconf_key, widget_id, default_value, widget_tree, watch_changes)
 
 def configure_text_from_gconf(gconf_client, gconf_key, widget_id, default_value, widget_tree, watch_changes = False):
-    return g15uigconf.configure_text_from_gconf(gconf_client, gconf_key, widget_id, default_value, widget_tree, watch_changes)
+    return g15uiGConf.configure_text_from_gconf(gconf_client, gconf_key, widget_id, default_value, widget_tree, watch_changes)
 
 def configure_radio_from_gconf(gconf_client, gconf_key, widget_ids , gconf_values, default_value, widget_tree, watch_changes = False):
-    return g15uigconf.configure_radio_from_gconf(gconf_client, gconf_key, widget_ids , gconf_values, default_value, widget_tree, watch_changes)
+    return g15uiGConf.configure_radio_from_gconf(gconf_client, gconf_key, widget_ids , gconf_values, default_value, widget_tree, watch_changes)
 
 def configure_adjustment_from_gconf(gconf_client, gconf_key, widget_id, default_value, widget_tree):
-    g15uigconf.configure_adjustment_from_gconf(gconf_client, gconf_key, widget_id, default_value, widget_tree)
+    g15uiGConf.configure_adjustment_from_gconf(gconf_client, gconf_key, widget_id, default_value, widget_tree)
 
 def adjustment_changed(adjustment, key, gconf_client, integer = True):
-    g15uigconf.adjustment_changed(adjustment, key, gconf_client, integer)
+    g15uiGConf.adjustment_changed(adjustment, key, gconf_client, integer)
 
 def checkbox_changed(widget, key, gconf_client):
-    g15uigconf.checkbox_changed(widget, key, gconf_client)
+    g15uiGConf.checkbox_changed(widget, key, gconf_client)
 
 def text_changed(widget, key, gconf_client):
-    g15uigconf.text_changed(widget, key, gconf_client)
+    g15uiGConf.text_changed(widget, key, gconf_client)
 
 def radio_changed(widget, key, gconf_client, gconf_value):
-    g15uigconf.radio_changed(widget, key, gconf_client, gconf_value)
+    g15uiGConf.radio_changed(widget, key, gconf_client, gconf_value)
 
 def get_float_or_default(gconf_client, key, default = None):
     return g15gconf.get_float_or_default(gconf_client, key, default)

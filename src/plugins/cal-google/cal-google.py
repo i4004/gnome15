@@ -14,13 +14,17 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  
-import gnome15.g15locale as g15locale
-_ = g15locale.get_translation("cal-evolution", modfile = __file__).ugettext
+from gnome15 import g15locale
+_ = g15locale.get_translation("cal-evolution", modfile = __file__).gettext
 
-import gnome15.g15accounts as g15accounts
-import gnome15.g15globals as g15globals
+import gi
+gi.require_version('Gtk','3.0')
+from gi.repository import Gtk
+
+
+from gnome15 import g15accounts
+from gnome15 import g15globals
 import cal
-import gtk
 import os
 import datetime
 import calendar
@@ -68,7 +72,7 @@ class GoogleCalendarOptions(g15accounts.G15AccountOptions):
     def __init__(self, account, account_ui):
         g15accounts.G15AccountOptions.__init__(self, account, account_ui)
                 
-        self.widget_tree = gtk.Builder()
+        self.widget_tree = Gtk.Builder()
         self.widget_tree.add_from_file(os.path.join(os.path.dirname(__file__), "cal-google.ui"))
         self.component = self.widget_tree.get_object("OptionPanel")
         

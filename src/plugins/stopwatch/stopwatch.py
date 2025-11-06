@@ -15,19 +15,19 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  
-import gnome15.g15locale as g15locale
-_ = g15locale.get_translation("stopwatch", modfile = __file__).ugettext
+from gnome15 import g15locale
+_ = g15locale.get_translation("stopwatch", modfile = __file__).gettext
 
-import gnome15.g15screen as g15screen 
-import gnome15.g15theme as g15theme 
-import gnome15.util.g15gconf as g15gconf
-import gnome15.util.g15pythonlang as g15pythonlang
-import gnome15.g15driver as g15driver
-import gnome15.g15globals as g15globals
-import gnome15.g15plugin as g15plugin
-import gnome15.g15text as g15text
+from gi.repository import Pango
+from gnome15 import g15screen 
+from gnome15 import g15theme 
+from gnome15.util import g15gconf
+from gnome15.util import g15pythonlang
+from gnome15 import g15driver
+from gnome15 import g15globals
+from gnome15 import g15plugin
+from gnome15 import g15text
 import datetime
-import pango
 import timer
 
 import preferences as g15preferences
@@ -213,7 +213,7 @@ class G15Stopwatch(g15plugin.G15RefreshingPlugin):
             gap = 8
             
         self._text.set_canvas(canvas)
-        self._text.set_attributes(text, align = pango.ALIGN_CENTER, font_desc = font_name, font_absolute_size = font_size * pango.SCALE / factor)
+        self._text.set_attributes(text, align = Pango.Alignment.CENTER, font_desc = font_name, font_absolute_size = font_size * Pango.SCALE / factor)
         x, y, width, height = self._text.measure()
         if horizontal:
             if self.screen.driver.get_bpp() == 1:
@@ -235,7 +235,7 @@ class G15Stopwatch(g15plugin.G15RefreshingPlugin):
     ***********************************************************    
     ''' 
 
-    def _config_changed(self, client, connection_id, entry, args):
+    def _config_changed(self, client, connection_id, entry, *args):
         self._load_configuration()
         self.reload_theme()
         self.screen.set_priority(self.page, g15screen.PRI_HIGH, revert_after = 3.0)

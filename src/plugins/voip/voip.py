@@ -22,26 +22,29 @@
 # LGPL. See http://telepathy.freedesktop.org/wiki/Contact%20selector
 
 
-import gnome15.g15locale as g15locale
-_ = g15locale.get_translation("voip", modfile=__file__).ugettext
+from gnome15 import g15locale
+_ = g15locale.get_translation("voip", modfile=__file__).gettext
 
-import gnome15.g15globals as g15globals
-import gnome15.util.g15convert as g15convert
-import gnome15.util.g15scheduler as g15scheduler
-import gnome15.util.g15uigconf as g15uigconf
-import gnome15.util.g15gconf as g15gconf
-import gnome15.util.g15icontools as g15icontools
-import gnome15.g15theme as g15theme
-import gnome15.g15driver as g15driver
-import gnome15.g15plugin as g15plugin
-import gnome15.g15screen as g15screen
+import gi
+gi.require_version('Gtk','3.0')
+from gi.repository import Gtk
+
+from gnome15 import g15globals
+from gnome15.util import g15convert
+from gnome15.util import g15scheduler
+from gnome15.util import g15uigconf
+from gnome15.util import g15gconf
+from gnome15.util import g15icontools
+from gnome15 import g15theme
+from gnome15 import g15driver
+from gnome15 import g15plugin
+from gnome15 import g15screen
 import os
 import time
-import gnome15.colorpicker as colorpicker
+from gnome15 import colorpicker
 from math import pi
 import base64
 import cairo
-import gtk
 
 # Logging
 import logging
@@ -107,7 +110,7 @@ MODES = {
 
 
 def show_preferences(parent, driver, gconf_client, gconf_key):
-    widget_tree = gtk.Builder()
+    widget_tree = Gtk.Builder()
     widget_tree.add_from_file(os.path.join(os.path.dirname(__file__), "voip.ui"))
     dialog = widget_tree.get_object("VoipDialog")
     dialog.set_transient_for(parent)
@@ -132,7 +135,7 @@ def get_backend(backend_type):
     Keyword arguments:
     backend_type          -- backend type
     """
-    import gnome15.g15pluginmanager as g15pluginmanager
+    from gnome15 import g15pluginmanager
     return g15pluginmanager.get_module_for_id("voip-%s" % backend_type)
 
 def get_available_backends():
@@ -141,7 +144,7 @@ def get_available_backends():
     backend plugins that are installed 
     """
     l = []
-    import gnome15.g15pluginmanager as g15pluginmanager
+    from gnome15 import g15pluginmanager
     for p in g15pluginmanager.imported_plugins:
         if p.id.startswith("voip-"):
             l.append(p.id[5:])

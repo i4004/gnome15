@@ -17,19 +17,22 @@
 """
 Calendar backend that retrieves event data from Evolution
 """
+
+import gi
+gi.require_version('Gtk','3.0')
+from gi.repository import Gtk
  
-import gnome15.g15locale as g15locale
-import gnome15.g15accounts as g15accounts
-_ = g15locale.get_translation("cal-evolution", modfile = __file__).ugettext
-import gtk
-import urllib
+from gnome15 import g15locale
+from gnome15 import g15accounts
+_ = g15locale.get_translation("cal-evolution", modfile = __file__).gettext
+from urllib import request, parse, error
 import vobject
 import datetime
 import dateutil
 import sys, os, os.path
 import re
 import cal
-import xdg.BaseDirectory
+from xdg import BaseDirectory
 import logging
 logger = logging.getLogger(__name__)
  
@@ -60,7 +63,7 @@ def create_backend(account, account_manager):
 class EvolutionCalendarOptions(g15accounts.G15AccountOptions):
     def __init__(self, account, account_ui):
         g15accounts.G15AccountOptions.__init__(self, account, account_ui)
-        self.widget_tree = gtk.Builder()
+        self.widget_tree = Gtk.Builder()
         self.widget_tree.add_from_file(os.path.join(os.path.dirname(__file__), "cal-evolution.ui"))
         self.component = self.widget_tree.get_object("OptionPanel")
         try :
@@ -115,7 +118,7 @@ class EvolutionBackend(cal.CalendarBackend):
                     logger.debug("Could not read attribute", exc_info = ae)
                     continue
             else: # evolution library does not support webcal ics
-                webcal = urllib.urlopen('http://' + cal[1][9:])
+                webcal = urllib.request.urlopen('http://' + cal[1][9:])
                 webcalstring = ''.join(webcal.readlines())
                 webcal.close()
                 event_list = vobject.readOne(webcalstring).vevent_list

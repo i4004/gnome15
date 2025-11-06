@@ -15,14 +15,14 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import gobject
-import g15pythonlang
+from gi.repository import GObject
+from . import g15pythonlang
 
 # Logging
 import logging
 logger = logging.getLogger(__name__)
 
-import jobqueue
+from . import jobqueue
 
 '''
 Default scheduler
@@ -48,7 +48,7 @@ def run_on_gobject(function, *args):
     if g15pythonlang.is_gobject_thread():
         return False
     else:
-        gobject.idle_add(function, *args)
+        GObject.idle_add(function, *args)
         return True
 
 def stop_queue(queue_name):

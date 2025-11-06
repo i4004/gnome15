@@ -19,24 +19,28 @@
 Cairo utilities
 Has functions to transform, load and convert cairo surfaces
 '''
+import gi
+gi.require_version('Rsvg', '2.0')
+from gi.repository import Rsvg as rsvg
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk, Gdk, GdkPixbuf
 
-import gtk.gdk
 import os, os.path
 import cairo
 import math
-import rsvg
-import urllib
+import urllib.request, urllib.parse, urllib.error
 import base64
 import xdg.Mime as mime
-import g15convert
-import g15os
-import gnome15.g15globals
+from . import g15convert
+from . import g15os
+from gnome15 import g15globals
 
 # Logging
 import logging
 logger = logging.getLogger(__name__)
 
-from cStringIO import StringIO
+from io import BytesIO
+from io import StringIO
 
 def rotate(context, degrees):
     context.rotate(g15convert.degrees_to_radians(degrees));
@@ -86,12 +90,12 @@ def load_surface_from_file(filename, size = None):
             if type == "image/svg+xml" or filename.lower().endswith(".svg"):
                 return load_svg_as_surface(filename, size)
             else:
-                return pixbuf_to_surface(gtk.gdk.pixbuf_new_from_file(full_cache_path), size)
+                return pixbuf_to_surface(GdkPixbuf.Pixbuf.new_from_file(full_cache_path), size)
                 
     if is_url(filename):
         type = None
         try:
-            file = urllib.urlopen(filename)
+            file = urllib.request.urlopen(filename)
             data = file.read()
             type = file.info().gettype()
             
@@ -128,11 +132,11 @@ def load_surface_from_file(filename, size = None):
             else:                
                 if type == "text/plain":
                     if filename.startswith("file://"):
-                        pixbuf = gtk.gdk.pixbuf_new_from_file(filename[7:])
+                        pixbuf = GdkPixbuf.Pixbuf.new_from_file(filename[7:])
                         return pixbuf_to_surface(pixbuf, size)
                     raise Exception("Could not determine type")
                 else:
-                    pbl = gtk.gdk.pixbuf_loader_new_with_mime_type(type)
+                    pbl = GdkPixbuf.Pixbuf.loader_new_with_mime_type(type)
                     pbl.write(data)
                     pixbuf = pbl.get_pixbuf()
                     pbl.close()
@@ -149,16 +153,17 @@ def load_surface_from_file(filename, size = None):
                         filename = os.path.realpath(filename)
                     return load_svg_as_surface(filename, size)
                 else:
-                    return pixbuf_to_surface(gtk.gdk.pixbuf_new_from_file(filename), size)
+                    return pixbuf_to_surface(GdkPixbuf.Pixbuf.new_from_file(filename), size)
             
             except Exception as e:
                 logger.warning("Failed to get image %s (%s).", filename, type, exc_info = e)
                 return None
             
 def load_svg_as_surface(filename, size):
-    svg = rsvg.Handle(filename)
+    svg = rsvg.Handle.new_from_file(filename)
     try:
-        svg_size = svg.get_dimension_data()[2:4]
+        dim = svg.get_dimensions()
+        svg_size = [ dim.width, dim.height ]
         if size == None:
             size = svg_size
         sx = int(size) if isinstance(size, int) or isinstance(size, float) else int(size[0])
@@ -183,12 +188,11 @@ def pixbuf_to_surface(pixbuf, size = None):
     scale = get_scale(size, (x, y))
     surface = cairo.ImageSurface(0, int(x * scale), int(y * scale))
     context = cairo.Context(surface)
-    gdk_context = gtk.gdk.CairoContext(context) 
     if size != None:
-        gdk_context.scale(scale, scale)
-    gdk_context.set_source_pixbuf(pixbuf,0,0)
-    gdk_context.paint()
-    gdk_context.scale(1 / scale, 1 / scale)
+        context.scale(scale, scale)
+    Gdk.cairo_set_source_pixbuf(context, pixbuf, 0, 0)
+    context.paint()
+    context.scale(1 / scale, 1 / scale)
     return surface
      
     
@@ -199,14 +203,14 @@ def image_to_pixbuf(im, type = "ppm"):
     p_type = type
     if type == "ppm":
         p_type = "pnm"
-    file1 = StringIO()  
+    file1 = BytesIO()  
     try:
         im.save(file1, type)  
         contents = file1.getvalue()  
     finally:
         file1.close()  
-    loader = gtk.gdk.PixbufLoader(p_type)  
-    loader.write(contents, len(contents))  
+    loader = GdkPixbuf.PixbufLoader.new_with_type(p_type)  
+    loader.write(contents)  
     pixbuf = loader.get_pixbuf()  
     loader.close()  
     return pixbuf
@@ -218,8 +222,8 @@ def surface_to_pixbuf(surface):
         contents = file1.getvalue() 
     finally:
         file1.close()   
-    loader = gtk.gdk.PixbufLoader("png")  
-    loader.write(contents, len(contents))  
+    loader = GdkPixbuf.PixbufLoader.new_with_type("png")  
+    loader.write(contents)  
     pixbuf = loader.get_pixbuf()  
     loader.close()  
     return pixbuf

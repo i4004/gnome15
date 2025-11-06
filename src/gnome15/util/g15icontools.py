@@ -19,25 +19,30 @@
 Icon utilities
 '''
 
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gdk as gdk
+from gi.repository import Gtk
+
 from gnome15 import g15globals
-import g15cairo
-import gtk.gdk
+from . import g15cairo
 import os
 import cairo
 from PIL import Image
-import urllib
+import urllib.request, urllib.parse, urllib.error
 import base64
 
 # Logging
 import logging
 logger = logging.getLogger(__name__)
 
-from cStringIO import StringIO
+from io import StringIO
+from io import BytesIO
 
 '''
 Look for icons locally as well if running from source
 '''
-gtk_icon_theme = gtk.icon_theme_get_default()
+gtk_icon_theme = Gtk.IconTheme.get_default()
 if g15globals.dev:
     gtk_icon_theme.prepend_search_path(g15globals.icons_dir)
 
@@ -64,7 +69,7 @@ def get_embedded_image_url(path):
                     surface.write_to_png(img_data)
                 else:
                     # URL
-                    pagehandler = urllib.urlopen(path)
+                    pagehandler = urllib.request.urlopen(path)
                     file_str.write(pagehandler.info().gettype())
                     while 1:
                         data = pagehandler.read(512)
@@ -73,7 +78,7 @@ def get_embedded_image_url(path):
                         img_data.write(data)
 
             file_str.write(";base64,")
-            file_str.write(base64.b64encode(img_data.getvalue()))
+            file_str.write(base64.b64encode(img_data.getvalue()).decode())
             return file_str.getvalue()
         finally:
             img_data.close()
@@ -122,10 +127,10 @@ def get_icon(gconf_client, icon, size = None):
     real_icon_file = get_icon_path(icon, size)
     if real_icon_file != None:
         if real_icon_file.endswith(".svg"):
-            pixbuf = gtk.gdk.pixbuf_new_from_file(real_icon_file)
+            pixbuf = GdkPixbuf.Pixbuf.new_from_file(real_icon_file)
             scale = g15cairo.get_scale(size, (pixbuf.get_width(), pixbuf.get_height()))
             if scale != 1.0:
-                pixbuf = pixbuf.scale_simple(pixbuf.get_width() * scale, pixbuf.get_height() * scale, gtk.gdk.INTERP_BILINEAR)
+                pixbuf = pixbuf.scale_simple(pixbuf.get_width() * scale, pixbuf.get_height() * scale, GdkPixbuf.InterpType.BILINEAR)
             img = Image.fromstring("RGBA", (pixbuf.get_width(), pixbuf.get_height()), pixbuf.get_pixels())
         else:
             img = Image.open(real_icon_file)

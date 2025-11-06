@@ -29,8 +29,8 @@ Translations may be required for Python code, SVG or Glade files.
 import os
 import locale
 import gettext
-import g15globals
-import util.g15gconf as g15gconf
+from gnome15 import g15globals
+from gnome15.util import g15gconf as g15gconf
 import time
 import datetime
 import re
@@ -73,14 +73,14 @@ __translations = {}
 
 # Replace these date/time formats to get a format without seconds
 REPLACE_FORMATS = [
-        (u'.%S', u''),
-        (u':%S', u''),
-        (u',%S', u''),
-        (u' %S', u''),
-        (u':%OS', ''),
-        (u'%r', '%I:%M %p'),
-        (u'%t', '%H:%M'),
-        (u'%T', '%H:%M')
+        ('.%S', ''),
+        (':%S', ''),
+        (',%S', ''),
+        (' %S', ''),
+        (':%OS', ''),
+        ('%r', '%I:%M %p'),
+        ('%t', '%H:%M'),
+        ('%T', '%H:%M')
     ]
 
 def format_time(time_val, gconf_client, display_seconds = True, show_timezone = False, compact = True):
@@ -197,7 +197,7 @@ def get_translation(domain, modfile=None):
     """
     if domain in __translations:
         return __translations[domain]
-    gettext.install (True, localedir=None, unicode=1)
+    gettext.install (True, localedir=None)
     translation_location = mo_location
     if modfile is not None:
         translation_location = "%s/i18n" % os.path.dirname(modfile)
@@ -205,7 +205,6 @@ def get_translation(domain, modfile=None):
     locale.bindtextdomain(domain, translation_location)
     gettext.bindtextdomain(domain, translation_location)
     gettext.textdomain (domain)
-    gettext.bind_textdomain_codeset(domain, "UTF-8")
     language = gettext.translation (domain, translation_location, languages=languages, fallback=True)
     __translations[domain] = language
     return language

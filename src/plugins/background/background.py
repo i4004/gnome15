@@ -14,22 +14,24 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  
-import gnome15.g15locale as g15locale
-_ = g15locale.get_translation("background", modfile = __file__).ugettext
+from gnome15 import g15locale
+_ = g15locale.get_translation("background", modfile = __file__).gettext
 
-import gnome15.util.g15convert as g15convert
-import gnome15.util.g15uigconf as g15uigconf
-import gnome15.util.g15gconf as g15gconf
-import gnome15.util.g15cairo as g15cairo
-import gnome15.g15driver as g15driver
-import gnome15.g15screen as g15screen
-import gnome15.g15profile as g15profile
-import gnome15.g15desktop as g15desktop
+import gi
+from gi.repository import GConf
+
+
+from gnome15.util import g15convert
+from gnome15.util import g15uigconf
+from gnome15.util import g15gconf 
+from gnome15.util import g15cairo
+from gnome15 import g15driver
+from gnome15 import g15screen
+from gnome15 import g15profile 
+from gnome15 import g15desktop
 import cairo
-import gtk
 import os
 import logging
-import gconf
 from lxml import etree
 logger = logging.getLogger(__name__)
 
@@ -53,7 +55,7 @@ class G15BackgroundPreferences():
 
     def __init__(self, parent, driver, gconf_client, gconf_key):
         
-        widget_tree = gtk.Builder()
+        widget_tree = Gtk.Builder()
         widget_tree.add_from_file(os.path.join(os.path.dirname(__file__), "background.ui"))
         
         self.gconf_client = gconf_client
@@ -74,14 +76,14 @@ class G15BackgroundPreferences():
             widget_tree.get_object("UseFile").set_active(True)
         
         # The file chooser
-        chooser = gtk.FileChooserDialog("Open..",
+        chooser = Gtk.FileChooserDialog("Open..",
                                None,
-                               gtk.FILE_CHOOSER_ACTION_OPEN,
-                               (gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
-                                gtk.STOCK_OPEN, gtk.RESPONSE_OK))
-        chooser.set_default_response(gtk.RESPONSE_OK)
+                               Gtk.FILE_CHOOSER_ACTION_OPEN,
+                               (Gtk.STOCK_CANCEL, Gtk.RESPONSE_CANCEL,
+                                Gtk.STOCK_OPEN, Gtk.RESPONSE_OK))
+        chooser.set_default_response(Gtk.RESPONSE_OK)
         
-        filter = gtk.FileFilter()
+        filter = Gtk.FileFilter()
         filter.set_name("Images")
         filter.add_mime_type("image/png")
         filter.add_mime_type("image/jpeg")
@@ -92,7 +94,7 @@ class G15BackgroundPreferences():
         filter.add_pattern("*.gif")
         chooser.add_filter(filter)
         
-        filter = gtk.FileFilter()
+        filter = Gtk.FileFilter()
         filter.set_name("All files")
         filter.add_pattern("*")
         chooser.add_filter(filter)
@@ -145,7 +147,7 @@ class G15Background():
         self.gconf_key = gconf_key
         self.target_surface = None
         self.target_context = None
-        self.gconf_client.add_dir('/desktop/gnome/background', gconf.CLIENT_PRELOAD_NONE)
+        self.gconf_client.add_dir('/desktop/gnome/background', GConf.CLIENT_PRELOAD_NONE)
     
     def activate(self):
         self.bg_img = None
@@ -172,7 +174,7 @@ class G15Background():
                 except Exception as e:
                     logger.debug("Could not get background with GI, falling back", exc_info = e)
                     # Work around on Ubuntu 12.10+ until Gnome15 is converted to GObject bindings
-                    import gnome15.g15dconf as g15dconf
+                    from gnome15 import g15dconf
                     self.gnome_dconf_settings = g15dconf.GSettings("org.gnome.desktop.background")
 
             if self.gnome_dconf_settings is not None:
@@ -193,7 +195,7 @@ class G15Background():
             self.gnome_dconf_settings.disconnect(self.gnome_dconf_handle)
             self.gnome_dconf_settings.__del__()
         
-    def config_changed(self, client, connection_id, entry, args):
+    def config_changed(self, client, connection_id, entry, *args):
         self._do_config_changed()
         
     def destroy(self):
@@ -202,7 +204,7 @@ class G15Background():
     '''
     Private
     ''' 
-    def _active_profile_changed(self, client, connection_id, entry, args):
+    def _active_profile_changed(self, client, connection_id, entry, *args):
         self._do_config_changed()
         
     def _profiles_changed(self, profile_id, device_uid):

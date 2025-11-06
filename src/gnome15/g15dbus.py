@@ -15,18 +15,19 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  
 import dbus.service
-import g15globals
-import g15theme
-import util.g15scheduler as g15scheduler
-import util.g15gconf as g15gconf
-import util.g15cairo as g15cairo
-import util.g15icontools as g15icontools
-import g15driver
-import g15devices
-import gobject
+from gnome15 import g15globals
+from . import g15theme
+from gnome15.util import g15scheduler as g15scheduler
+from gnome15.util import g15gconf as g15gconf
+from gnome15.util import g15cairo as g15cairo
+from gnome15.util import g15icontools as g15icontools
+from . import g15driver
+from . import g15devices
+from gi.repository import GObject
+from gi.repository import GLib
 
 
-from cStringIO import StringIO
+from io import StringIO
 
 BUS_NAME="org.gnome15.Gnome15"
 NAME="/org/gnome15/Service"
@@ -61,9 +62,9 @@ class AbstractG15DBUSService(dbus.service.Object):
                     p.append(k)
             if len(p) > 0:
                 if state == g15driver.KEY_STATE_UP:
-                    gobject.idle_add(self.KeysReleased,p)
+                    GLib.idle_add(self.KeysReleased,p)
                 elif state == g15driver.KEY_STATE_DOWN:
-                    gobject.idle_add(self.KeysPressed, p)
+                    GLib.idle_add(self.KeysPressed, p)
                 return True
             
     def _set_receive_actions(self, enabled):
@@ -391,7 +392,7 @@ class G15DBUSScreenService(AbstractG15DBUSService):
     @dbus.service.method(SCREEN_IF_NAME, out_signature='as')
     def GetPages(self):
         l = []
-        for page in self._dbus_pages.values():
+        for page in list(self._dbus_pages.values()):
             l.append(page._bus_name)
         return l
     
@@ -399,7 +400,7 @@ class G15DBUSScreenService(AbstractG15DBUSService):
     def GetPagesBelowPriority(self, priority):
         logger.warning("The GetPagesBelowPriority is deprecated. Use GetPages instead.")
         l = []
-        for page in self._dbus_pages.values():
+        for page in list(self._dbus_pages.values()):
             if page._page.priority >= priority:
                 l.append(page._bus_name)
         return l
@@ -498,7 +499,7 @@ class G15DBUSScreenService(AbstractG15DBUSService):
         for h in self._notify_handles:
             self._service.conf_client.notify_remove(h)
         
-    def _cycle_screens_option_changed(self, client, connection_id, entry, args):
+    def _cycle_screens_option_changed(self, client, connection_id, entry, *args):
         self.CyclingChanged(entry.value.get_bool())
     
     def _get_dimmable_controls(self):
@@ -979,7 +980,7 @@ class G15DBUSService(AbstractG15DBUSService):
     Private
     """
     def _name_owner_changed(self, name, old_owner, new_owner):
-        for screen in self._dbus_screens.values():
+        for screen in list(self._dbus_screens.values()):
             if name in screen._clients and old_owner and not new_owner:
                 logger.info("Cleaning up DBUS client %s", name)
                 client = screen._clients[name]

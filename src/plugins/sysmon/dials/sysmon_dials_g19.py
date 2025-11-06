@@ -14,10 +14,13 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import gnome15.util.g15convert as g15convert
-import gnome15.util.g15cairo as g15cairo
+import gi
+gi.require_version('Rsvg', '2.0')
+from gi.repository import Rsvg as rsvg
+
+from gnome15.util import g15convert
+from gnome15.util import g15cairo
 import os
-import rsvg
 import cairo
       
 needles = {
@@ -28,8 +31,8 @@ needles = {
         "mem_cached_pc" : (254, 198,    rsvg.Handle(os.path.join(os.path.dirname(__file__), "g19-tiny-needle.svg")))
            }
 
-def paint_foreground(theme, canvas, properties, attributes, args): 
-    for key in needles.keys():
+def paint_foreground(theme, canvas, properties, attributes, *args): 
+    for key in list(needles.keys()):
         needle = needles[key]
         svg = needle[2]      
         surface = create_needle_surface(svg, ( ( 180.0 / 100.0 ) * float(properties[key]) ) )

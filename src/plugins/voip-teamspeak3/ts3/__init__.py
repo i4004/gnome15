@@ -17,8 +17,8 @@
 from telnetlib import Telnet
 from threading import Thread
 from threading import RLock
-from message import MessageFactory
-from message import Command
+from .message import MessageFactory
+from .message import Command
 
 # Logging
 import logging

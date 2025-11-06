@@ -14,20 +14,20 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  
-import gnome15.g15locale as g15locale
-_ = g15locale.get_translation("videoplayer", modfile = __file__).ugettext
+from gnome15 import g15locale
+_ = g15locale.get_translation("videoplayer", modfile = __file__).gettext
 
-import gnome15.g15driver as g15driver
-import gnome15.util.g15convert as g15convert
-import gnome15.util.g15scheduler as g15scheduler
-import gnome15.util.g15cairo as g15cairo
-import gnome15.util.g15icontools as g15icontools
-import gnome15.g15theme as g15theme
+from gnome15 import g15driver
+from gnome15.util import g15convert
+from gnome15.util import g15scheduler
+from gnome15.util import g15cairo
+from gnome15.util import g15icontools
+from gnome15 import g15theme
 from threading import Timer
-import gtk
+from gi.repository import Gtk
 import os
 import select
-import gobject
+from gi.repository import GObject
 import tempfile
 import subprocess
 from threading import Lock
@@ -87,9 +87,9 @@ class PlayThread(Thread):
         
     def _mute(self, mute):
         if mute:
-            print self._command("mute", "1")
+            print(self._command("mute", "1"))
         else:
-            print self._command("mute", "0")
+            print(self._command("mute", "0"))
             
     def _readlines(self):
         ret = []
@@ -199,19 +199,19 @@ class G15VideoPage(g15theme.G15Page):
             self._hide_timer = g15scheduler.schedule("HideSidebar", after, self._hide_sidebar)
         
     def _open(self):
-        dialog = gtk.FileChooserDialog("Open..",
+        dialog = Gtk.FileChooserDialog("Open..",
                                None,
-                               gtk.FILE_CHOOSER_ACTION_OPEN,
-                               (gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
-                                gtk.STOCK_OPEN, gtk.RESPONSE_OK))
-        dialog.set_default_response(gtk.RESPONSE_OK)
+                               Gtk.FileChooserAction.OPEN,
+                               (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+                                Gtk.STOCK_OPEN, Gtk.ResponseType.OK))
+        dialog.set_default_response(Gtk.ResponseType.OK)
         
-        filter = gtk.FileFilter()
+        filter = Gtk.FileFilter()
         filter.set_name(_("All files"))
         filter.add_pattern("*")
         dialog.add_filter(filter)
         
-        filter = gtk.FileFilter()
+        filter = Gtk.FileFilter()
         filter.set_name(_("Movies"))
         filter.add_mime_type("video/mpeg")
         filter.add_mime_type("video/quicktime")
@@ -237,10 +237,10 @@ class G15VideoPage(g15theme.G15Page):
         dialog.add_filter(filter)
         
         response = dialog.run()
-        while gtk.events_pending():
-            gtk.main_iteration(False) 
-        if response == gtk.RESPONSE_OK:
-            print dialog.get_filename(), 'selected'
+        while Gtk.events_pending():
+            Gtk.main_iteration(False) 
+        if response == Gtk.ResponseType.OK:
+            print(dialog.get_filename(), 'selected')
             self._movie_path = dialog.get_filename()
             if self._playing:
                 self._stop()
@@ -313,7 +313,7 @@ class G15VideoPlayer():
     def action_performed(self, binding):
         if self._page is not None and self._page.is_visible():
             if binding.action == g15driver.SELECT:
-                gobject.idle_add(self._page._open)
+                GObject.idle_add(self._page._open)
             elif binding.action == g15driver.NEXT_SELECTION:
                 if self._page._playing == None:
                     self._page._play()

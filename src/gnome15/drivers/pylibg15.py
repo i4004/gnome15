@@ -184,4 +184,4 @@ def get_joystick_position():
     return ( libg15.getJoystickX(), libg15.getJoystickY() )
 
 def __handle_key(code):
-    print "Got %d" %code
+    print("Got %d" %code)

@@ -2,6 +2,7 @@
 
 import re
 import time
+import sys
 
 class Tailer(object):
     """\
@@ -118,7 +119,7 @@ class Tailer(object):
         self.seek_end()
         end_pos = self.file.tell()
 
-        for i in xrange(lines):
+        for i in range(lines):
             if not self.seek_line():
                 break
 
@@ -134,7 +135,7 @@ class Tailer(object):
         """
         self.seek(0)
 
-        for i in xrange(lines):
+        for i in range(lines):
             if not self.seek_line_forward():
                 break
     
@@ -245,21 +246,21 @@ def _main(filepath, options):
             if options.lines > 0:
                 if options.head:
                     if options.follow:
-                        print >>sys.stderr, 'Cannot follow from top of file.'
+                        print("Cannot follow from top of file.", file=sys.stderr)
                         sys.exit(1)
                     lines = tailer.head(options.lines)
                 else:
                     lines = tailer.tail(options.lines)
         
                 for line in lines:
-                    print line
+                    print(line)
             elif options.follow:
                 # Seek to the end so we can follow
                 tailer.seek_end()
 
             if options.follow:
                 for line in tailer.follow(delay=options.sleep):
-                    print line
+                    print(line)
         except KeyboardInterrupt:
             # Escape silently
             pass

@@ -14,23 +14,28 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import gnome15.g15locale as g15locale
-_ = g15locale.get_translation("gnome15-drivers").ugettext
+from gnome15 import g15locale
+_ = g15locale.get_translation("gnome15-drivers").gettext
+
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk
+from gi.repository import GObject
+from gi.repository import GConf
+
 
 from threading import Thread
 from pyinputevent.pyinputevent import SimpleDevice
 
 import select 
 import pyinputevent.scancodes as S
-import gnome15.g15driver as g15driver
-import gnome15.util.g15scheduler as g15scheduler
-import gnome15.util.g15uigconf as g15uigconf
-import gnome15.g15globals as g15globals
-import gnome15.g15uinput as g15uinput
-import gconf
+from gnome15 import g15driver
+from gnome15.util import g15scheduler
+from gnome15.util import g15uigconf
+from gnome15 import g15globals
+from gnome15 import g15uinput
 import fcntl
 import os
-import gtk
 import cairo
 import re
 import usb
@@ -71,7 +76,7 @@ class G930DriverPreferences():
     def __init__(self, device, parent, gconf_client):
         self.device = device
         
-        widget_tree = gtk.Builder()
+        widget_tree = Gtk.Builder()
         widget_tree.add_from_file(os.path.join(g15globals.ui_dir, "driver_g930.ui"))
         self.window = widget_tree.get_object("G930DriverSettings")
         self.window.set_transient_for(parent)
@@ -181,7 +186,7 @@ class Driver(g15driver.AbstractDriver):
         self.key_thread = None
         self.device = device
         self.connected = False
-        self.conf_client = gconf.client_get_default()
+        self.conf_client = GConf.Client.get_default()
         self._init_device()
         self.notify_handles.append(self.conf_client.notify_add("/apps/gnome15/%s/grab_multimedia" % self.device.uid, self._config_changed, None))
     
@@ -215,7 +220,7 @@ class Driver(g15driver.AbstractDriver):
     def _load_configuration(self):
         self.grab_multimedia = self.conf_client.get_bool("/apps/gnome15/%s/grab_multimedia" % self.device.uid)
             
-    def _config_changed(self, client, connection_id, entry, args):
+    def _config_changed(self, client, connection_id, entry, *args):
         self._reload_and_reconnect()
         
     def get_size(self):

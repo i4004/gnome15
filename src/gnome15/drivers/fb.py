@@ -131,61 +131,61 @@ class fb_device():
         
         fixed_info = self.get_fixed_info()
         
-        print "--------------" 
-        print "Fixed"
-        print "--------------"
-        print "id:", fixed_info.id
-        print "smem_start:", fixed_info.smem_start
-        print "smem_len:", fixed_info.smem_len
-        print "type:", fixed_info.type
-        print "type_aux:", fixed_info.type_aux
-        print "visual:", fixed_info.visual
-        print "xpanstep:", fixed_info.xpanstep
-        print "ypanstep:", fixed_info.ypanstep
-        print "ywrapstep:", fixed_info.ywrapstep
-        print "line_length:", fixed_info.line_length
-        print "mmio_start:", fixed_info.mmio_start
-        print "mmio_len:", fixed_info.mmio_len
-        print "accel:", fixed_info.accel
+        print("--------------") 
+        print("Fixed")
+        print("--------------")
+        print("id:", fixed_info.id)
+        print("smem_start:", fixed_info.smem_start)
+        print("smem_len:", fixed_info.smem_len)
+        print("type:", fixed_info.type)
+        print("type_aux:", fixed_info.type_aux)
+        print("visual:", fixed_info.visual)
+        print("xpanstep:", fixed_info.xpanstep)
+        print("ypanstep:", fixed_info.ypanstep)
+        print("ywrapstep:", fixed_info.ywrapstep)
+        print("line_length:", fixed_info.line_length)
+        print("mmio_start:", fixed_info.mmio_start)
+        print("mmio_len:", fixed_info.mmio_len)
+        print("accel:", fixed_info.accel)
         
         
         variable_info = self.get_var_info()
                
-        print "--------------" 
-        print "Variable"
-        print "--------------"
-        print "xres:",variable_info.xres
-        print "yres:",variable_info.yres
-        print "xres_virtual:",variable_info.xres_virtual
-        print "yres_virtual:",variable_info.yres_virtual
-        print "xoffset:",variable_info.xoffset
-        print "yoffset:",variable_info.yoffset
-        print "bits_per_pixel:",variable_info.bits_per_pixel
-        print "grayscale:",variable_info.grayscale
-        print "red:",variable_info.red
-        print "green:",variable_info.green
-        print "blue:",variable_info.blue
-        print "transp:",variable_info.transp
-        print "activate:",variable_info.activate
-        print "height:",variable_info.height
-        print "width:",variable_info.width
-        print "accel_flags:",variable_info.accel_flags
-        print "pixclock:",variable_info.pixclock
-        print "left_margin:",variable_info.left_margin
-        print "right_margin:",variable_info.right_margin
-        print "update_margin:",variable_info.upper_margin
-        print "lower_margin:",variable_info.lower_margin
-        print "hsync_len:",variable_info.hsync_len
-        print "vsync_len:",variable_info.vsync_len
-        print "sync:",variable_info.sync
-        print "vmode:",variable_info.vmode
-        print "rotate:",variable_info.rotate
+        print("--------------") 
+        print("Variable")
+        print("--------------")
+        print("xres:",variable_info.xres)
+        print("yres:",variable_info.yres)
+        print("xres_virtual:",variable_info.xres_virtual)
+        print("yres_virtual:",variable_info.yres_virtual)
+        print("xoffset:",variable_info.xoffset)
+        print("yoffset:",variable_info.yoffset)
+        print("bits_per_pixel:",variable_info.bits_per_pixel)
+        print("grayscale:",variable_info.grayscale)
+        print("red:",variable_info.red)
+        print("green:",variable_info.green)
+        print("blue:",variable_info.blue)
+        print("transp:",variable_info.transp)
+        print("activate:",variable_info.activate)
+        print("height:",variable_info.height)
+        print("width:",variable_info.width)
+        print("accel_flags:",variable_info.accel_flags)
+        print("pixclock:",variable_info.pixclock)
+        print("left_margin:",variable_info.left_margin)
+        print("right_margin:",variable_info.right_margin)
+        print("update_margin:",variable_info.upper_margin)
+        print("lower_margin:",variable_info.lower_margin)
+        print("hsync_len:",variable_info.hsync_len)
+        print("vsync_len:",variable_info.vsync_len)
+        print("sync:",variable_info.sync)
+        print("vmode:",variable_info.vmode)
+        print("rotate:",variable_info.rotate)
    
    
 if __name__ == "__main__":     
     for d in os.listdir("/dev"):
         if d.startswith("fb"):
-            print "---------",d                
+            print("---------",d)                
             device = fb_device("/dev/%s" %d) 
-            print "Screen bytes: " + str(device.get_screen_size())
+            print("Screen bytes: " + str(device.get_screen_size()))
             device.dump()

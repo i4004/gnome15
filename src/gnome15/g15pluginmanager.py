@@ -64,10 +64,10 @@ or if Gnome15 itself is closing down.
  
 import os.path
 import sys
-import g15globals
-import g15driver
-import g15actions
-import gconf
+from . import g15globals
+from . import g15driver
+from . import g15actions
+from gi.repository import GConf
 import threading
 
 # Logging
@@ -279,7 +279,7 @@ class G15Plugins():
         self.conf_client = self.service.conf_client
         self.started = []
         self.activated = []
-        self.conf_client.add_dir(self._get_plugin_key(), gconf.CLIENT_PRELOAD_NONE)
+        self.conf_client.add_dir(self._get_plugin_key(), GConf.ClientPreloadType.PRELOAD_NONE)
         self.module_map = {}
         self.plugin_map = {}
         self.state = UNINITIALISED
@@ -346,7 +346,7 @@ class G15Plugins():
                     logger.warning("Same plugin with ID of %s is already loaded." \
                                    "Only the first copy will be used.", mod.id)
                 else:
-                    self.conf_client.add_dir(plugin_dir_key, gconf.CLIENT_PRELOAD_NONE)
+                    self.conf_client.add_dir(plugin_dir_key, GConf.ClientPreloadType.PRELOAD_NONE)
                     key = "%s/enabled" % plugin_dir_key
                     self.conf_client.notify_add(key, self._plugin_changed)
                     if (self.screen is None and is_global_plugin(mod)) or \
@@ -506,7 +506,7 @@ class G15Plugins():
         else:
             return "/apps/gnome15/%s/plugins" % folder
                 
-    def _plugin_changed(self, client, connection_id, entry, args):
+    def _plugin_changed(self, client, connection_id, entry, *args):
         self.lock.acquire()
         if self.screen is not None:
             self.screen._check_active_plugins()

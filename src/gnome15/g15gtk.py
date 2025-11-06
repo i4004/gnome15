@@ -17,15 +17,18 @@
 '''
 A top level GTK windows that draws on the LCD
 '''
-import gtk
-import gobject
-import g15driver
-import util.g15cairo as g15cairo
-import util.g15pythonlang as g15pythonlang
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk
+from gi.repository import GObject
+from gi.repository import GLib
+from . import g15driver
+from gnome15.util import g15cairo as g15cairo
+from gnome15.util import g15pythonlang as g15pythonlang
 from threading import Lock
 from threading import Semaphore
-import g15theme
-import g15screen
+from . import g15theme
+from . import g15screen
 import cairo
 import ctypes
 
@@ -98,7 +101,7 @@ class G15OffscreenWindow(g15theme.Component):
         
     def on_configure(self):
         g15theme.Component.on_configure(self)        
-        gobject.idle_add(self._create_window)
+        GLib.idle_add(self._create_window)
         self.get_screen().key_handler.action_listeners.append(self)
         
     def notify_remove(self):
@@ -108,18 +111,18 @@ class G15OffscreenWindow(g15theme.Component):
     def set_content(self, content):
         self.content = content
         if self.window is not None:
-            gobject.idle_add(self._do_set_content)
+            GLib.idle_add(self._do_set_content)
             
     def action_performed(self, binding):
         if self.is_visible():
             if binding.action == g15driver.NEXT_SELECTION:
-                gobject.idle_add(self.window.focus_next)
+                GLib.idle_add(self.window.focus_next)
             elif binding.action == g15driver.PREVIOUS_SELECTION:
-                gobject.idle_add(self.window.focus_previous)
+                GLib.idle_add(self.window.focus_previous)
             if binding.action == g15driver.NEXT_PAGE:
-                gobject.idle_add(self.window.change_widget)
+                GLib.idle_add(self.window.change_widget)
             elif binding.action == g15driver.PREVIOUS_PAGE:
-                gobject.idle_add(self.window.change_widget, None, True)
+                GLib.idle_add(self.window.change_widget, None, True)
             elif binding.action == g15driver.SELECT:
                 pass
             
@@ -145,10 +148,10 @@ class G15OffscreenWindow(g15theme.Component):
         self.window = window
         screen.redraw(self.get_root())
         
-class G15Window(gtk.OffscreenWindow):
+class G15Window(Gtk.OffscreenWindow):
     
     def __init__(self, screen, page, area_x, area_y, area_width, area_height):
-        gtk.OffscreenWindow.__init__(self)
+        GObject.GObject.__init__(self)
         self.pixbuf = None
         self.scroller = None
         self.screen = screen
@@ -159,7 +162,7 @@ class G15Window(gtk.OffscreenWindow):
         self.area_width = int(area_width)
         self.area_height = int(area_height)
         self.surface = None
-        self.content = gtk.EventBox()
+        self.content = Gtk.EventBox()
         self.set_app_paintable(True)
         self.content.set_app_paintable(True)        
         self.connect("screen-changed", self.screen_changed)
@@ -177,14 +180,14 @@ class G15Window(gtk.OffscreenWindow):
         
         # If the content window is a scroller, we send focus events to it
         # moving the scroller position to the focussed component
-        if isinstance(content, gtk.ScrolledWindow):
+        if isinstance(content, Gtk.ScrolledWindow):
             self.scroller = content
         
     def paint(self, canvas):
         if g15pythonlang.is_gobject_thread():
             raise Exception("Painting on mainloop")
         self.start_for_capture()
-        gobject.idle_add(self._do_capture)
+        GLib.idle_add(self._do_capture)
         self.lock.acquire()
         canvas.save()
         canvas.translate(self.area_x, self.area_y)
@@ -193,19 +196,19 @@ class G15Window(gtk.OffscreenWindow):
         canvas.restore()
             
     def focus_next(self):
-        self.content.get_toplevel().child_focus(gtk.DIR_TAB_FORWARD)
+        self.content.get_toplevel().child_focus(Gtk.DIR_TAB_FORWARD)
         self.scroll_to_focussed()
         self.screen.redraw(self.page)
         
     def focus_previous(self):
-        self.content.get_toplevel().child_focus(gtk.DIR_TAB_BACKWARD)
+        self.content.get_toplevel().child_focus(Gtk.DIR_TAB_BACKWARD)
         self.screen.redraw(self.page)
         self.scroll_to_focussed()
         
     def change_widget(self, amount = None, reverse = False):
         focussed = self.get_focus()
         if focussed != None:
-            if isinstance(focussed, gtk.HScale):
+            if isinstance(focussed, Gtk.HScale):
                 adj = focussed.get_adjustment()
                 ps = adj.get_page_size() if amount is None else amount
                 if ps == 0:
@@ -217,7 +220,7 @@ class G15Window(gtk.OffscreenWindow):
                 self.screen.redraw(self.page)
         
     def show_all(self):
-        gtk.OffscreenWindow.show_all(self)
+        Gtk.OffscreenWindow.show_all(self)
         
     def scroll_to_focussed(self):
         if self.scroller is not None:
@@ -280,7 +283,7 @@ class G15Window(gtk.OffscreenWindow):
     def _do_capture(self):
         self.content.window.invalidate_rect((0,0,self.area_width,self.area_height), True)
         self.content.window.process_updates(True)
-        pixbuf = gtk.gdk.Pixbuf( gtk.gdk.COLORSPACE_RGB, False, 8, self.area_width, self.area_height)
+        pixbuf = GdkPixbuf.Pixbuf.new( GdkPixbuf.Colorspace.RGB, False, 8, self.area_width, self.area_height)
         pixbuf.get_from_drawable(self.content.window, self.content.get_colormap(), 0, 0, 0, 0, self.area_width, self.area_height)
         self.surface = g15cairo.pixbuf_to_surface(pixbuf)
         self.pixbuf = pixbuf        

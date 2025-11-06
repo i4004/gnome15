@@ -26,6 +26,7 @@ files of which require root access, as they are in /sys).
 import sys
 import os
 import glib
+import gi
 
 # Allow running from local path
 path = os.path.abspath(os.path.join(os.path.abspath(os.path.dirname(sys.argv[0])), ".."))
@@ -33,12 +34,11 @@ if os.path.exists(path):
     sys.path.insert(0, path) 
     
 # Logging
-import gnome15.g15logging as g15logging
+from gnome15 import g15logging as g15logging
 logger = g15logging.get_root_logger()
 
 #
-import gobject
-gobject.threads_init()
+from gi.repository import GObject
 
 # DBUS - Use to check current desktop service status or stop it
 import dbus
@@ -62,12 +62,12 @@ def start_service(bus, no_trap=False,):
 
     # Start the loop    
     try :
-        import gnome15.g15system as g15system   
+        from gnome15 import g15system   
         service = g15system.G15SystemServiceController(bus, no_trap=no_trap)
         service.start_loop()
     except dbus.exceptions.NameExistsException as e:
         logger.debug("Gnome15 service already running", exc_info = e)
-        print "Gnome15 desktop service is already running"
+        print("Gnome15 desktop service is already running")
         sys.exit(1)
     
 if __name__ == "__main__":
@@ -90,7 +90,7 @@ if __name__ == "__main__":
         bus = dbus.SessionBus() if options.use_session_bus else dbus.SystemBus()
         if not check_service_status(bus):
             if args[0] == "stop":
-                print "Gnome15 system service is not running"
+                print("Gnome15 system service is not running")
         else:            
             service_object = bus.get_object('org.gnome15.SystemService', '/org/gnome15/SystemService')
             system_service = dbus.Interface(service_object, 'org.gnome15.SystemService')
@@ -99,7 +99,7 @@ if __name__ == "__main__":
     if len(args) == 0 or ( len(args) == 1 and ( args[0] == "start" or args[0] == "restart" ) ):
         bus = dbus.SessionBus() if options.use_session_bus else dbus.SystemBus()
         if check_service_status(bus):
-            print "Gnome15 desktop service already running"
+            print("Gnome15 desktop service already running")
         else:
             if options.foreground or ( not options.foreground and os.fork() == 0 ):
                 start_service(bus, options.no_trap)

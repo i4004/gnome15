@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
  
 #        +-----------------------------------------------------------------------------+
 #        | GPL                                                                         |
@@ -61,4 +61,4 @@ if __name__ == "__main__":
         for text in root.xpath('//text()',namespaces=nsmap):
             text = str(text).strip()
             if len(text) > 0 and text.startswith("_("):
-                print "char *s = N_(\"%s\");" % text[2:-1]
+                print("char *s = N_(\"%s\");" % text[2:-1])

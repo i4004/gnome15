@@ -203,4 +203,4 @@ def uptime():
 if __name__ == "__main__":
     for d in proclist():
         ps = proc_state(d)
-        print d,ps.cmd,ps.uid,proc_args(d)
+        print(d,ps.cmd,ps.uid,proc_args(d))

@@ -16,23 +16,26 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import gst
-import gtk
+import gi
+gi.require_version('Gtk','3.0')
+from gi.repository import Gtk
+gi.require_version('Gst', '1.0')
+from gi.repository import Gst
 
 class Main:
     def __init__(self):
 
         # Create GUI objects
-        self.window = gtk.Window()
-        self.vbox = gtk.VBox()
-        self.da = gtk.DrawingArea()
-        self.bb = gtk.HButtonBox()
+        self.window = Gtk.Window()
+        self.vbox = Gtk.VBox()
+        self.da = Gtk.DrawingArea()
+        self.bb = Gtk.HButtonBox()
         self.da.set_size_request(300, 150)
-        self.playButton = gtk.Button(stock="gtk - media - play")
+        self.playButton = Gtk.Button(stock="gtk - media - play")
         self.playButton.connect("clicked", self.OnPlay)
-        self.stopButton = gtk.Button(stock="gtk - media - stop")
+        self.stopButton = Gtk.Button(stock="gtk - media - stop")
         self.stopButton.connect("clicked", self.OnStop)
-        self.quitButton = gtk.Button(stock="gtk - quit")
+        self.quitButton = Gtk.Button(stock="gtk - quit")
         self.quitButton.connect("clicked", self.OnQuit)
         self.vbox.pack_start(self.da)
         self.bb.add(self.playButton)
@@ -42,13 +45,13 @@ class Main:
         self.window.add(self.vbox)
 
         # Create GStreamer pipeline
-        self.pipeline = gst.Pipeline("mypipeline")
+        self.pipeline = Gst.Pipeline("mypipeline")
         # Set up our video test source
-        self.videotestsrc = gst.element_factory_make("videotestsrc", "video")
+        self.videotestsrc = Gst.ElementFactory.make("videotestsrc", "video")
         # Add it to the pipeline
         self.pipeline.add(self.videotestsrc)
         # Now we need somewhere to send the video
-        self.sink = gst.element_factory_make("xvimagesink", "sink")
+        self.sink = Gst.ElementFactory.make("xvimagesink", "sink")
         # Add it to the pipeline
         self.pipeline.add(self.sink)
         # Link the video source to the sink - xv
@@ -56,17 +59,17 @@ class Main:
         self.window.show_all()
 
     def OnPlay(self, widget):
-        print "play"
+        print("play")
         # Tell the video sink to display the output in our DrawingArea
         self.sink.set_xwindow_id(self.da.window.xid)
-        self.pipeline.set_state(gst.STATE_PLAYING)
+        self.pipeline.set_state(Gst.State.PLAYING)
 
     def OnStop(self, widget):
-        print "stop"
-        self.pipeline.set_state(gst.STATE_READY)
+        print("stop")
+        self.pipeline.set_state(Gst.State.READY)
 
     def OnQuit(self, widget):
-        gtk.main_quit()
+        Gtk.main_quit()
 
 start = Main()
-gtk.main() 
+Gtk.main() 

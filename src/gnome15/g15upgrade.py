@@ -21,9 +21,9 @@ any migration needs to take place.
 """
  
 import os.path
-import g15devices
-import g15globals
-import util.g15pythonlang as g15pythonlang
+from . import g15devices
+from gnome15 import g15globals
+from gnome15.util import g15pythonlang as g15pythonlang
 import logging
 import shutil
 import sys
@@ -77,7 +77,7 @@ def version_0_x_0_to_0_7_0():
         Copy the GConf folders. 
         """
         gconf_dir = os.path.expanduser("~/.gconf/apps/gnome15")
-        gconf_file = os.path.join(gconf_dir, "%gconf.xml")
+        gconf_file = os.path.join(gconf_dir, "%GConf.xml")
         gconf_plugins_dir = os.path.join(gconf_dir, "plugins")
         for device in devices:
             device_dir = os.path.join(gconf_dir, device.uid)
@@ -85,7 +85,7 @@ def version_0_x_0_to_0_7_0():
                 logger.info("Creating GConf directory for %s", device.uid)
                 os.mkdir(device_dir)
             logger.info("Copying settings %s to %s", gconf_file, device.uid)
-            shutil.copyfile(gconf_file, os.path.join(device_dir, "%gconf.xml"))
+            shutil.copyfile(gconf_file, os.path.join(device_dir, "%GConf.xml"))
             logger.info("Copying plugin settings %s to %s", gconf_plugins_dir, device.uid)
             target_plugins_path = os.path.join(device_dir, "plugins")
             if not os.path.exists(target_plugins_path):
@@ -108,8 +108,8 @@ def version_0_x_0_to_0_7_0():
         if sys.version_info > (2, 6):
             process_info = subprocess.check_output(["sh", "-c", "ps -U %d|grep gconfd|head -1" % os.getuid()])
         else:
-            import commands
-            process_info = commands.getstatusoutput("sh -c \"ps -U %d|grep gconfd|head -1\"" % os.getuid()) 
+            import subprocess
+            process_info = subprocess.getstatusoutput("sh -c \"ps -U %d|grep gconfd|head -1\"" % os.getuid()) 
         if process_info:
             pid = g15pythonlang.split_args(process_info)[0]
             logger.info("Sending process %s SIGHUP", pid)

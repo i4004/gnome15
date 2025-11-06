@@ -22,17 +22,25 @@
 GdkPixbuf thumbnail sink
 """
 
-import gobject
-import gst
+import gi
+gi.require_version('GstBase', '1.0')
+from gi.repository import GstBase
+gi.require_version('Gst', '1.0')
+from gi.repository import GObject
+from gi.repository import Gst
+
+GObject.threads_init()
+Gst.init(None)
+
 import struct
 import time
 
-big_to_cairo_alpha_mask = struct.unpack('=i', '\xFF\x00\x00\x00')[0]
-big_to_cairo_red_mask = struct.unpack('=i', '\x00\xFF\x00\x00')[0]
-big_to_cairo_green_mask = struct.unpack('=i', '\x00\x00\xFF\x00')[0]
-big_to_cairo_blue_mask = struct.unpack('=i', '\x00\x00\x00\xFF')[0]
+big_to_cairo_alpha_mask = struct.unpack('=i', b'\xFF\x00\x00\x00')[0]
+big_to_cairo_red_mask = struct.unpack('=i', b'\x00\xFF\x00\x00')[0]
+big_to_cairo_green_mask = struct.unpack('=i', b'\x00\x00\xFF\x00')[0]
+big_to_cairo_blue_mask = struct.unpack('=i', b'\x00\x00\x00\xFF')[0]
 
-class CairoSurfaceThumbnailSink(gst.BaseSink):
+class CairoSurfaceThumbnailSink(GstBase.BaseSink):
     """
     GStreamer thumbnailing sink element.
 
@@ -40,16 +48,16 @@ class CairoSurfaceThumbnailSink(gst.BaseSink):
     """
 
     __gsignals__ = {
-        "thumbnail": (gobject.SIGNAL_RUN_LAST,
-                      gobject.TYPE_NONE,
-                      ([gobject.TYPE_UINT64]))
+        "thumbnail": (GObject.SIGNAL_RUN_LAST,
+                      GObject.TYPE_NONE,
+                      ([GObject.TYPE_UINT64]))
         }
 
     __gsttemplates__ = (
-        gst.PadTemplate("sink",
-                         gst.PAD_SINK,
-                         gst.PAD_ALWAYS,
-                         gst.Caps("video/x-raw-rgb,"
+        Gst.PadTemplate.new("sink",
+                         Gst.PadDirection.SINK,
+                         Gst.PadPresence.ALWAYS,
+                         Gst.Caps.from_string("video/x-raw,"
                                   "bpp = (int) 32, depth = (int) 32,"
                                   "endianness = (int) BIG_ENDIAN,"
                                   "alpha_mask = (int) %i, "
@@ -65,8 +73,8 @@ class CairoSurfaceThumbnailSink(gst.BaseSink):
                                      big_to_cairo_blue_mask)))
         )
 
-    def __init__(self):
-        gst.BaseSink.__init__(self)
+    def __init__(self, *args):
+        GstBase.BaseSink.__init__(self, *args)
         self.width = 1
         self.height = 1
         self.set_sync(True)
@@ -74,19 +82,19 @@ class CairoSurfaceThumbnailSink(gst.BaseSink):
 
     def do_set_caps(self, caps):
         self.log("caps %s" % caps.to_string())
-        self.log("padcaps %s" % self.get_pad("sink").get_caps().to_string())
-        self.width = caps[0]["width"]
-        self.height = caps[0]["height"]
-        if not caps[0].get_name() == "video/x-raw-rgb":
+        self.log("padcaps %s" % self.get_static_pad("sink").query_caps().to_string())
+        self.width = caps.get_structure(0).get_int("width")
+        self.height = caps.get_structure(0).get_int("height")
+        if not caps.get_structure(0).get_name() == "video/x-raw":
             return False
         return True
 
     def do_render(self, buf):
         self.data = str(buf.data)
         self.emit('thumbnail', buf.timestamp)
-        return gst.FLOW_OK
+        return Gst.FLOW_OK
  
     def do_preroll(self, buf):
         return self.do_render(buf)
 
-gobject.type_register(CairoSurfaceThumbnailSink)
+GObject.type_register(CairoSurfaceThumbnailSink)

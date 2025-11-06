@@ -16,19 +16,19 @@
 
 import gc
 import weakref
-import objgraph
+from . import objgraph
 
 #gc.set_debug(gc.DEBUG_LEAK)
 
 
 import time            
 if __name__ == "__main__":
-    print "Creating snapshot1"
+    print("Creating snapshot1")
     snapshot1 = take_snapshot()    
-    print "Creating some objects"    
+    print("Creating some objects")    
     l = [ "A", "B", "C", "D", "E" ]  
-    print "Creating snapshot2"
+    print("Creating snapshot2")
     snapshot2 = take_snapshot()  
-    print "Comparing"
+    print("Comparing")
     compare_snapshots(snapshot1, snapshot2)
          

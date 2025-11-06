@@ -14,20 +14,23 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  
-import gnome15.g15locale as g15locale
-_ = g15locale.get_translation("clock", modfile = __file__).ugettext
+from gnome15 import g15locale
+_ = g15locale.get_translation("clock", modfile = __file__).gettext
 
-import gnome15.g15screen as g15screen 
-import gnome15.g15theme as g15theme 
-import gnome15.util.g15scheduler as g15scheduler
-import gnome15.util.g15pythonlang as g15pythonlang
-import gnome15.g15driver as g15driver
-import gnome15.g15globals as g15globals
-import gnome15.g15text as g15text
-import gnome15.g15plugin as g15plugin
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Pango
+from gi.repository import Gtk
+
+from gnome15 import g15screen
+from gnome15 import g15theme
+from gnome15.util import g15scheduler
+from gnome15.util import g15pythonlang
+from gnome15 import g15driver
+from gnome15 import g15globals
+from gnome15 import g15text
+from gnome15 import g15plugin
 import datetime
-import gtk
-import pango
 import os
 import locale
 
@@ -59,7 +62,7 @@ This function must be provided if you set has_preferences to True. You
 should display a dialog for editing the plugins preferences
 '''
 def show_preferences(parent, driver, gconf_client, gconf_key):
-    widget_tree = gtk.Builder()
+    widget_tree = Gtk.Builder()
     widget_tree.add_from_file(os.path.join(os.path.dirname(__file__), "clock.ui"))
     
     dialog = widget_tree.get_object("ClockDialog")
@@ -246,8 +249,8 @@ class G15Clock(g15plugin.G15Plugin):
                 gap = 8
                 
             self.text.set_canvas(canvas)
-            self.text.set_attributes(text, align = pango.ALIGN_CENTER, font_desc = font_name, \
-                                     font_absolute_size = font_size * pango.SCALE / factor)
+            self.text.set_attributes(text, align = Pango.Alignment.CENTER, font_desc = font_name, \
+                                     font_absolute_size = font_size * Pango.SCALE / factor)
             x, y, width, height = self.text.measure()
             if horizontal: 
                 if self.screen.driver.get_bpp() == 1:
@@ -269,7 +272,7 @@ class G15Clock(g15plugin.G15Plugin):
     ***********************************************************    
     ''' 
         
-    def _config_changed(self, client, connection_id, entry, args):
+    def _config_changed(self, client, connection_id, entry, *args):
         
         '''
         Load the gconf configuration

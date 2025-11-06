@@ -16,22 +16,25 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import gnome15.g15locale as g15locale
-_ = g15locale.get_translation("lcdshot", modfile = __file__).ugettext
+from gnome15 import g15locale
+_ = g15locale.get_translation("lcdshot", modfile = __file__).gettext
 
-import gnome15.g15driver as g15driver
-import gnome15.g15devices as g15devices
-import gnome15.g15globals as g15globals
-import gnome15.g15actions as g15actions
+import gi
+gi.require_version('Gtk','3.0')
+from gi.repository import Gtk
+from gi.repository import GObject
+
+from gnome15 import g15driver
+from gnome15 import g15devices
+from gnome15 import g15globals
+from gnome15 import g15actions
 import os.path
-import gtk
-import gobject
-import gnome15.util.g15convert as g15convert
-import gnome15.g15notify as g15notify
-import gnome15.util.g15uigconf as g15uigconf
-import gnome15.util.g15gconf as g15gconf
-import gnome15.util.g15os as g15os
-import gnome15.util.g15cairo as g15cairo
+from gnome15.util import g15convert
+from gnome15 import g15notify
+from gnome15.util import g15uigconf
+from gnome15.util import g15gconf
+from gnome15.util import g15os
+from gnome15.util import g15cairo
 import subprocess
 import shutil
 from threading import Thread
@@ -76,16 +79,16 @@ class LCDShotPreferences():
     def __init__(self, parent, driver, gconf_client, gconf_key):
         self.gconf_client = gconf_client
         self.gconf_key = gconf_key
-        widget_tree = gtk.Builder()
+        widget_tree = Gtk.Builder()
         widget_tree.add_from_file(os.path.join(os.path.dirname(__file__), "lcdshot.ui"))
         dialog = widget_tree.get_object("LCDShotDialog")
         dialog.set_transient_for(parent)        
-        chooser = gtk.FileChooserDialog("Open..",
+        chooser = Gtk.FileChooserDialog("Open..",
                                None,
-                               gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER,
-                               (gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
-                                gtk.STOCK_OPEN, gtk.RESPONSE_OK))
-        chooser.set_default_response(gtk.RESPONSE_OK)
+                               Gtk.FileChooserAction.SELECT_FOLDER,
+                               (Gtk.STOCK_CANCEL, Gtk.FileChooserAction.CANCEL,
+                                Gtk.STOCK_OPEN, Gtk.ResponseType.OK))
+        chooser.set_default_response(Gtk.ResponseType.OK)
         chooser_button = widget_tree.get_object("FileChooserButton")        
         chooser_button.dialog = chooser 
         chooser_button.connect("file-set", self._file_set)
@@ -209,7 +212,7 @@ class G15LCDShot():
                 self._screen.error_on_keyboard_display(_("Failed to save screenshot to %s. %s") % (dir, str(e)))
                 self._recording = False
             
-            self._recording_timer = gobject.timeout_add(1000 / self._record_fps, self._frame)
+            self._recording_timer = GObject.timeout_add(1000 / self._record_fps, self._frame)
             
     def _find_next_free_filename(self, ext, title):
         dir_path = g15gconf.get_string_or_default(self._gconf_client, "%s/folder" % \

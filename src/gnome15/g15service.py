@@ -18,25 +18,31 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  
 import sys
-import pygtk
+import gi
+gi.require_version('Gtk', '3.0')
+gi.require_version('GConf', '2.0')
+from gi.repository import GObject
+from gi.repository import Gtk
+from gi.repository import Gdk 
+gi.require_version('GdkX11', '3.0')
+from gi.repository import GdkX11
+from gi.repository import GConf
+from gi.repository import GLib
 from gnome15 import g15accounts
-pygtk.require('2.0')
 import os
-import gobject
-import g15globals
-import g15screen
-import g15profile
-import g15dbus
-import g15devices
-import g15desktop
-import g15uinput
-import g15network
-import g15accounts
-import g15driver
-import gconf
-import util.g15scheduler as g15scheduler
-import util.g15gconf as g15gconf
-import util.g15os as g15os
+from gnome15 import g15globals
+from . import g15screen
+from . import g15profile
+from . import g15dbus
+from . import g15devices
+from . import g15desktop
+from . import g15uinput
+from . import g15network
+from . import g15accounts
+from . import g15driver
+from gnome15.util import g15scheduler as g15scheduler
+from gnome15.util import g15gconf as g15gconf
+from gnome15.util import g15os as g15os
 import Xlib.X 
 import Xlib.ext
 import Xlib.XK
@@ -45,10 +51,9 @@ import Xlib.protocol
 import time
 import dbus
 import signal
-import g15pluginmanager
-import g15actions
+from . import g15pluginmanager
+from . import g15actions
 from threading import Thread
-import gtk.gdk
  
 # Logging
 import logging
@@ -56,16 +61,16 @@ logger = logging.getLogger(__name__)
 
 # Used for getting logout  / shutdown signals
 master_client = None
-if g15desktop.get_desktop() in [ "gnome", "gnome-shell" ]:
-    try:
-        import gnome.ui
-        master_client = gnome.ui.master_client()
-    except Exception as e:
-        logger.debug("Could not get gnome master client", exc_info = e)
-        pass
+#if g15desktop.get_desktop() in [ "gnome", "gnome-shell" ]:
+#    try:
+#        import gnome.ui
+#        master_client = gnome.ui.master_client()
+#    except Exception as e:
+#        logger.debug("Could not get gnome master client", exc_info = e)
+#        pass
 
 # Upgrade
-import g15upgrade
+from . import g15upgrade
 g15upgrade.upgrade()
 
     
@@ -556,7 +561,7 @@ class G15Service(g15desktop.G15AbstractService):
         self.active_window = None
         self.shutting_down = False
         self.starting_up = True
-        self.conf_client = gconf.client_get_default()
+        self.conf_client = GConf.Client.get_default()
         self.screens = []
         self.started = False
         self.service_listeners = []
@@ -743,8 +748,8 @@ class G15Service(g15desktop.G15AbstractService):
         
     def _check_active_application_with_wnck(self, event=None):
         try:
-            import wnck
-            window = wnck.screen_get_default().get_active_window()
+            from gi.repository import Wnck
+            window = Wnck.Screen.get_default().get_active_window()
             if window is not None and not window.is_skip_pager():
                 app = window.get_application()
                 active_application_name = app.get_name() if app is not None else ""
@@ -757,7 +762,7 @@ class G15Service(g15desktop.G15AbstractService):
         except Exception as e:
             logger.warning("Failed to activate profile for active window", exc_info = e)
             
-        gobject.timeout_add(500, self._check_active_application_with_wnck)
+        GObject.timeout_add(500, self._check_active_application_with_wnck)
         
     def _check_state_of_all_devices(self, quickly = False):
         logger.info("Checking state of %d devices", len(self.devices))
@@ -798,7 +803,7 @@ class G15Service(g15desktop.G15AbstractService):
         self.system_bus = dbus.SystemBus()
         
         # Create a screen for each device        
-        self.conf_client.add_dir("/apps/gnome15", gconf.CLIENT_PRELOAD_NONE)
+        self.conf_client.add_dir("/apps/gnome15", GConf.ClientPreloadType.PRELOAD_NONE)
         logger.info("Looking for devices")
         if len(self.devices) == 0:
             if g15devices.have_udev and not self.exit_on_no_devices:
@@ -846,7 +851,7 @@ class G15Service(g15desktop.G15AbstractService):
         
             
         # Monitor active application    
-        gobject.idle_add(self._configure_window_monitoring)
+        GLib.idle_add(self._configure_window_monitoring)
                 
         # Activate global plugins
         self.global_plugins.activate()
@@ -873,7 +878,7 @@ class G15Service(g15desktop.G15AbstractService):
             listener.service_started_up()
         self.started = True
         
-        gobject.idle_add(self._monitor_session)
+        GLib.idle_add(self._monitor_session)
         
         # Watch for devices changing
         g15devices.device_added_listeners.append(self._device_added)
@@ -907,8 +912,8 @@ class G15Service(g15desktop.G15AbstractService):
             self.session_manager_client_object.connect_to_signal("Stop", self._sm_stop)
     
             session_manager_client_public_object = self.session_bus.get_object("org.gnome.SessionManager", client_path, "org.gnome.SessionManager.Client")
-            sm_client_id = session_manager_client_public_object.GetStartupId()
-            gtk.gdk.set_sm_client_id(sm_client_id)
+            sm_client_id = session_manager_client_public_object.GetStartupId(dbus_interface='org.gnome.SessionManager.Client')
+            GdkX11.x11_set_sm_client_id(sm_client_id)
             connected_to_session_manager = True
             logger.info("Connected to GNOME session manager")
         except Exception as e:
@@ -928,8 +933,8 @@ class G15Service(g15desktop.G15AbstractService):
                 self.session_manager_client_object.connect_to_signal("Stop", self._sm_stop)
 
                 session_manager_client_public_object = self.session_bus.get_object("org.mate.SessionManager", client_path, "org.mate.SessionManager.Client")
-                sm_client_id = session_manager_client_public_object.GetStartupId()
-                gtk.gdk.set_sm_client_id(sm_client_id)
+                sm_client_id = session_manager_client_public_object.GetStartupId(dbus_interface='org.mate.SessionManager.Client')
+                GdkX11.x11_set_sm_client_id(sm_client_id)
                 connected_to_session_manager = True
                 logger.info("Connected to MATE session manager")
             except Exception as e:
@@ -1036,25 +1041,27 @@ class G15Service(g15desktop.G15AbstractService):
             g15scheduler.queue(SERVICE_QUEUE, "activeSessionChanged", 0.0, self._check_state_of_all_devices)
         
     def _configure_window_monitoring(self):
-        logger.info("Attempting to set up BAMF")
-        try :
-            bamf_object = self.session_bus.get_object('org.ayatana.bamf', '/org/ayatana/bamf/matcher')     
-            self.bamf_matcher = dbus.Interface(bamf_object, 'org.ayatana.bamf.matcher')
-            self.session_bus.add_signal_receiver(self._active_window_changed, dbus_interface = 'org.ayatana.bamf.matcher', signal_name="ActiveWindowChanged")
-            active_window = self.bamf_matcher.ActiveWindow() 
-            logger.info("Will be using BAMF for window matching")
-            if active_window:
-                self._active_window_changed("", active_window)
+        # code does not work with BAMF anymore. So, it is commented now.
+#        logger.info("Attempting to set up BAMF")
+#        try :
+#            bamf_object = self.session_bus.get_object('org.ayatana.bamf', '/org/ayatana/bamf/matcher')     
+#            self.bamf_matcher = dbus.Interface(bamf_object, 'org.ayatana.bamf.matcher')
+#            self.session_bus.add_signal_receiver(self._active_window_changed, dbus_interface = 'org.ayatana.bamf.matcher', signal_name="ActiveWindowChanged")
+#            active_window = self.bamf_matcher.ActiveWindow() 
+#            logger.info("Will be using BAMF for window matching")
+#            if active_window:
+#                self._active_window_changed("", active_window)
+#        except Exception as e:
+#            logger.info("BAMF not available, falling back to polling WNCK.")
+#            logger.debug("BAMF attempt below :", exc_info = e)
+        try :                
+            import gi
+            gi.require_version('Wnck','3.0')
+            from gi.repository import Wnck
+            self._check_active_application_with_wnck()
         except Exception as e:
-            logger.info("BAMF not available, falling back to polling WNCK.")
-            logger.debug("BAMF attempt below :", exc_info = e)
-            try :                
-                import wnck
-                wnck.__file__
-                self._check_active_application_with_wnck()
-            except Exception as e:
-                logger.warning("Python Wnck not available either, no automatic profile switching", exc_info = e)
-            
+            logger.warning("Python Wnck not available either, no automatic profile switching", exc_info = e)
+           
     def _add_screen(self, device):
         try:
             screen = g15screen.G15Screen(g15pluginmanager, self, device)

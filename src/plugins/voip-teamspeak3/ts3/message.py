@@ -51,7 +51,7 @@ class MessageBase(object):
         return False
 
     def __unicode__(self):
-        return unicode(self.__str__())
+        return str(self.__str__())
 
     def __repr__(self):
         return "<%s>" % self.__str__()
@@ -70,13 +70,13 @@ class MessageBase(object):
         return tuple(items)
 
     def _clean_incoming_value(self, value):
-        for fr, to in self.MAPPINGS.items():
+        for fr, to in list(self.MAPPINGS.items()):
             value = value.replace(fr, to)
         return value
 
     def _clean_outgoing_value(self, value):
         value = str(value)
-        for fr, to in self.MAPPINGS.items():
+        for fr, to in list(self.MAPPINGS.items()):
             if to:
                 value = value.replace(to, fr)
         return value
@@ -146,12 +146,12 @@ class Message(MessageBase):
         return self.args[key]
 
     def keys(self):
-        return self.args.keys()
+        return list(self.args.keys())
 
     @property
     def output(self):
         arglist = []
-        for param, value in self.args.items():
+        for param, value in list(self.args.items()):
             arglist.append("%s=%s" % (
                     param,
                     self._clean_outgoing_value(value),

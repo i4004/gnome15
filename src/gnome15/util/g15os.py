@@ -72,7 +72,7 @@ def mkdir_p(path):
     path: the full path to the directory to create.
     """
     try:
-        os.makedirs(path)
+        os.makedirs(path, exist_ok=True)
     except OSError as exc: # Python >2.5
         logger.debug("Error when trying to create path %s", path, exc_info = exc)
         import errno

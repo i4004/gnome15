@@ -17,7 +17,7 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import ts3
-import gnome15.g15logging as g15logging
+from gnome15 import g15logging
 import logging
  
 if __name__ == "__main__":

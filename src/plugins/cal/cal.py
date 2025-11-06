@@ -14,25 +14,28 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  
-import gnome15.g15locale as g15locale
-_ = g15locale.get_translation("cal", modfile = __file__).ugettext
+from gnome15 import g15locale
+_ = g15locale.get_translation("cal", modfile = __file__).gettext
 
-import gnome15.g15theme as g15theme
-import gnome15.g15driver as g15driver
-import gnome15.util.g15convert as g15convert
-import gnome15.util.g15scheduler as g15scheduler
-import gnome15.util.g15uigconf as g15uigconf
-import gnome15.util.g15gconf as g15gconf
-import gnome15.util.g15cairo as g15cairo
-import gnome15.util.g15icontools as g15icontools
-import gnome15.g15screen as g15screen
-import gnome15.g15accounts as g15accounts
-import gnome15.g15plugin as g15plugin
-import gnome15.g15globals as g15globals
+import gi
+gi.require_version('Gtk','3.0')
+from gi.repository import Gtk
+
+from gnome15 import g15theme
+from gnome15 import g15driver
+from gnome15.util import g15convert
+from gnome15.util import g15scheduler
+from gnome15.util import g15uigconf
+from gnome15.util import g15gconf
+from gnome15.util import g15cairo
+from gnome15.util import g15icontools
+from gnome15 import g15screen
+from gnome15 import g15accounts
+from gnome15 import g15plugin
+from gnome15 import g15globals
 import datetime
 import time
 import os, os.path
-import gtk
 import calendar
 
 # Logging
@@ -93,7 +96,7 @@ def get_backend(account_type):
     Keyword arguments:
     account_type          -- account type
     """
-    import gnome15.g15pluginmanager as g15pluginmanager
+    from gnome15 import g15pluginmanager
     return g15pluginmanager.get_module_for_id("cal-%s" % account_type)
 
 def get_available_backends():
@@ -102,7 +105,7 @@ def get_available_backends():
     backend plugins that are installed 
     """
     l = []
-    import gnome15.g15pluginmanager as g15pluginmanager
+    from gnome15 import g15pluginmanager
     for p in g15pluginmanager.imported_plugins:
         if p.id.startswith("cal-"):
             l.append(p.id[4:])
@@ -245,7 +248,7 @@ class G15CalendarPreferences(g15accounts.G15AccountPreferences):
         return backend.create_options(account, self)
     
     def create_general_options(self):
-        widget_tree = gtk.Builder()
+        widget_tree = Gtk.Builder()
         widget_tree.add_from_file(os.path.join(os.path.dirname(__file__), "cal.ui"))
         g15uigconf.configure_checkbox_from_gconf(self.gconf_client, "%s/twenty_four_hour_times" % self.gconf_key, "TwentyFourHourTimes", True, widget_tree)
         return widget_tree.get_object("OptionPanel")
@@ -350,7 +353,7 @@ class G15Cal(g15plugin.G15Plugin):
     Private
     """
     
-    def _config_changed(self, client, connection_id, entry, args):
+    def _config_changed(self, client, connection_id, entry, *args):
         self._loaded = 0
         self._redraw()
         
@@ -434,15 +437,15 @@ class G15Cal(g15plugin.G15Plugin):
                     logger.warning("Could not find a calendar backend for %s", acc.name)
                 else:
                     # Backends may specify if they need a network or not, so check the state
-                    import gnome15.g15pluginmanager as g15pluginmanager
+                    from gnome15 import g15pluginmanager
                     needs_net = g15pluginmanager.is_needs_network(backend)
                     if not needs_net or ( needs_net and self.screen.service.network_manager.is_network_available() ):
                         backend_events = backend.create_backend(acc, self._account_manager).get_events(now)
                         if backend_events is None:
                             logger.warning("Calendar returned no events, skipping")
                         else:
-                            self._event_days = dict(self._event_days.items() + \
-                                                    backend_events.items())
+                            self._event_days = dict(list(self._event_days.items()) + \
+                                                    list(backend_events.items()))
                     else:
                         logger.warning("Skipping backend %s because it requires the network, " \
                                     "and the network is not availabe", acc.type)
