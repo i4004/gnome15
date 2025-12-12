@@ -1,0 +1,7 @@
+{
+  "uuid": "gnome15-window-tracker@gnome15.org",
+  "name": "Gnome15 Window Tracker",
+  "description": "Provides active window information for Gnome15 via D-Bus",
+  "version": 1,
+  "shell-version": ["45", "46", "47", "48", "49", "50"]
+}

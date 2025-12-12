@@ -18,6 +18,32 @@ the work of "MultiCoreNop" [2].
 1. http://github.com/MultiCoreNop/Logitech-G19-Linux-Daemon
 2. http://github.com/MultiCoreNop
 
+## ⚡ Wayland Support (NEW!)
+
+Gnome15 now works natively on Wayland! See [WAYLAND_SETUP.md](WAYLAND_SETUP.md) for details.
+
+**What's included:**
+- ✅ G-key macros work using uinput (Wayland-native)
+- ✅ Automatic profile switching via GNOME Shell extension
+- ✅ No X11 dependencies required
+
+**For Wayland users:**
+
+1. Install the GNOME Shell extension:
+   ```bash
+   cd data/gnome-shell-extension
+   ./install.sh
+   ```
+
+2. Log out and log back in
+
+3. Enable the extension:
+   ```bash
+   gnome-extensions enable gnome15-window-tracker@gnome15.org
+   ```
+
+See [WAYLAND_SETUP.md](WAYLAND_SETUP.md) for complete instructions.
+
 # Installation
 Dependencies may be incomplete.. 
 
