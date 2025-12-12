@@ -758,25 +758,48 @@ class G15Service(g15desktop.G15AbstractService):
         return os.environ.get('XDG_SESSION_TYPE', '').lower() == 'wayland' or \
                os.environ.get('WAYLAND_DISPLAY') is not None
     
+    def _on_window_changed(self, wm_class, title):
+        """Handle window change signal from GNOME Shell extension"""
+        if wm_class and wm_class != self.active_application_name:
+            self.active_application_name = wm_class
+            self.active_window_title = title
+            logger.info("Active application is now %s (title: %s)", wm_class, title)
+            for screen in self.screens:
+                screen.set_active_application_name(wm_class)
+    
     def _check_active_application_with_wayland(self, event=None):
         """Check active application under Wayland using various methods"""
         active_app = None
         
-        # Method 1: Try to read from a state file (can be updated by external script)
-        state_file = os.path.expanduser("~/.cache/gnome15/active_window")
-        if os.path.exists(state_file):
-            try:
-                with open(state_file, 'r') as f:
-                    lines = f.readlines()
-                    if len(lines) >= 2:
-                        wm_class = lines[0].strip()
-                        title = lines[1].strip() if len(lines) > 1 else wm_class
-                        if wm_class:
-                            active_app = (wm_class, title)
-            except Exception as e:
-                logger.debug("Could not read active window state file", exc_info=e)
+        # Method 1: Try custom D-Bus service (if gnome15-window-tracker extension is installed)
+        try:
+            import dbus
+            session_bus = dbus.SessionBus()
+            tracker = session_bus.get_object('org.gnome15.WindowTracker', '/org/gnome15/WindowTracker')
+            tracker_iface = dbus.Interface(tracker, 'org.gnome15.WindowTracker')
+            wm_class, title = tracker_iface.GetActiveWindow()
+            if wm_class:
+                active_app = (wm_class, title)
+                logger.info("Using GNOME Shell extension for window tracking")
+        except Exception as e:
+            logger.debug("Gnome15 Window Tracker extension not available", exc_info = e)
         
-        # Method 2: Try GNOME Shell Eval (might be disabled in newer versions)
+        # Method 2: Try to read from a state file (can be updated by external script)
+        if not active_app:
+            state_file = os.path.expanduser("~/.cache/gnome15/active_window")
+            if os.path.exists(state_file):
+                try:
+                    with open(state_file, 'r') as f:
+                        lines = f.readlines()
+                        if len(lines) >= 2:
+                            wm_class = lines[0].strip()
+                            title = lines[1].strip() if len(lines) > 1 else wm_class
+                            if wm_class:
+                                active_app = (wm_class, title)
+                except Exception as e:
+                    logger.debug("Could not read active window state file", exc_info=e)
+        
+        # Method 3: Try GNOME Shell Eval (might be disabled in newer versions)
         if not active_app:
             try:
                 import dbus
@@ -794,28 +817,10 @@ class G15Service(g15desktop.G15AbstractService):
             except Exception as e:
                 logger.debug("GNOME Shell Eval not available", exc_info = e)
         
-        # Method 3: Try custom D-Bus service (if gnome15-window-tracker extension is installed)
-        if not active_app:
-            try:
-                import dbus
-                session_bus = dbus.SessionBus()
-                tracker = session_bus.get_object('org.gnome15.WindowTracker', '/org/gnome15/WindowTracker')
-                tracker_iface = dbus.Interface(tracker, 'org.gnome15.WindowTracker')
-                wm_class, title = tracker_iface.GetActiveWindow()
-                if wm_class:
-                    active_app = (wm_class, title)
-            except Exception as e:
-                logger.debug("Gnome15 Window Tracker extension not available", exc_info = e)
-        
         # Update active application if found
         if active_app:
             wm_class, title = active_app
-            if wm_class and wm_class != self.active_application_name:
-                self.active_application_name = wm_class
-                self.active_window_title = title
-                logger.info("Active application is now %s (title: %s)", wm_class, title)
-                for screen in self.screens:
-                    screen.set_active_application_name(wm_class)
+            self._on_window_changed(wm_class, title)
             
         GObject.timeout_add(500, self._check_active_application_with_wayland)
     
@@ -1124,6 +1129,24 @@ class G15Service(g15desktop.G15AbstractService):
         # Create cache directory for state file
         cache_dir = os.path.expanduser("~/.cache/gnome15")
         os.makedirs(cache_dir, exist_ok=True)
+        
+        # Try to subscribe to D-Bus signals from the extension
+        try:
+            import dbus
+            from dbus.mainloop.glib import DBusGMainLoop
+            DBusGMainLoop(set_as_default=True)
+            
+            session_bus = dbus.SessionBus()
+            session_bus.add_signal_receiver(
+                self._on_window_changed,
+                signal_name='ActiveWindowChanged',
+                dbus_interface='org.gnome15.WindowTracker',
+                bus_name=None,  # Any sender
+                path='/org/gnome15/WindowTracker'
+            )
+            logger.info("Subscribed to ActiveWindowChanged signal from GNOME Shell extension")
+        except Exception as e:
+            logger.debug("Could not subscribe to window change signals", exc_info = e)
         
         try:
             self._check_active_application_with_wayland()

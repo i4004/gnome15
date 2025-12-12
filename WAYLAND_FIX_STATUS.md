@@ -3,15 +3,102 @@
 **Date**: 2025-12-12  
 **Issue**: G-keys and automatic profile switching not working on Wayland
 
-**Status**: ✅ MACROS FIXED | ⚠️ WINDOW TRACKING IN PROGRESS
+**Status**: ✅ COMPLETE - MACROS AND WINDOW TRACKING WORKING!
 
 ## Summary of Changes
 
 1. ✅ **Macros working** - All G-key macros now use uinput and work on Wayland
 2. ✅ **X11 code removed** - Simplified to Wayland-only, removed all X11 dependencies
-3. ⚠️ **Window tracking** - In progress, GNOME Shell Eval is disabled in GNOME 49
+3. ✅ **Window tracking** - GNOME Shell extension active and working perfectly!
 
-## Current Session (Session 3 - 2025-12-12)
+## Current Session (Session 4 - 2025-12-12)
+
+### ✅ EXTENSION ACTIVATED AND WORKING!
+
+**Status**: The GNOME Shell extension has been enabled and is fully functional!
+
+**Verified**:
+- ✅ Extension is installed at `~/.local/share/gnome-shell/extensions/gnome15-window-tracker@gnome15.org/`
+- ✅ Extension is enabled in GNOME Shell
+- ✅ D-Bus service `org.gnome15.WindowTracker` is active and responding
+- ✅ Window changes are being detected correctly
+- ✅ Returns current window: `org.gnome.Terminal` with title `copilot`
+
+**Test results**:
+```bash
+$ dbus-send --session --print-reply --dest=org.gnome15.WindowTracker \
+  /org/gnome15/WindowTracker org.gnome15.WindowTracker.GetActiveWindow
+method return time=1765518097.267045 sender=:1.8
+   string "org.gnome.Terminal"
+   string "copilot"
+```
+
+**What this means**:
+- Automatic profile switching will now work on Wayland!
+- When you switch windows, Gnome15 will detect the change
+- Profiles can automatically activate based on the active application
+
+### ✅ SERVICE UPDATED AND RUNNING!
+
+**Status**: Service has been updated to subscribe to D-Bus signals from the extension!
+
+**Verified**:
+- ✅ Service subscribes to `ActiveWindowChanged` signals
+- ✅ Service detects active application using extension
+- ✅ Service logs: "Using GNOME Shell extension for window tracking"
+- ✅ Profile switching is active (detected: "librewolf")
+- ✅ Existing profiles found: VS Code, Reaper, Kdenlive, VSCodium, Thunderbird, GIMP, Pitivi
+
+**Changes made in this session**:
+1. Reordered fallback methods (extension first, state file second, Eval last)
+2. Added D-Bus signal subscription for instant window change detection
+3. Service now responds immediately when windows change
+
+**Service is now running with full Wayland support!**
+
+## Previous Session (Session 3 - 2025-12-12)
+
+### ✅ GNOME Shell Extension Created!
+
+**Location**: `~/.local/share/gnome-shell/extensions/gnome15-window-tracker@gnome15.org/`
+
+**What it does**:
+- Tracks active window (WM_CLASS and title) on Wayland
+- Provides D-Bus service: `org.gnome15.WindowTracker`
+- Emits signals when window changes
+- Enables automatic profile switching in Gnome15
+
+**Files**:
+- `extension.js` - Main extension code (154 lines)
+- `metadata.json` - Extension metadata
+- `README.md` - Full documentation
+
+### 🔄 ACTIVATION REQUIRED
+
+**IMPORTANT**: The extension is installed but needs GNOME Shell to discover it.
+
+**Steps to activate**:
+
+1. **Log out and log back in** (GNOME Shell needs to restart on Wayland)
+
+2. **After logging back in**, enable the extension:
+   ```bash
+   gnome-extensions enable gnome15-window-tracker@gnome15.org
+   ```
+
+3. **Test it**:
+   ```bash
+   cd ~/Projects/gnome15
+   ./test-window-tracker-extension.sh
+   ```
+
+4. **Restart Gnome15 service**:
+   ```bash
+   cd ~/Projects/gnome15
+   ./debug.sh restart
+   ```
+
+Once enabled, automatic profile switching will work!
 
 ### Issue: Automatic Profile Switching Not Working
 
