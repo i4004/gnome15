@@ -1,6 +1,57 @@
 # Gnome15 Wayland Fix - Current Status
 
 **Date**: 2025-12-12  
+**Issue**: G-keys and automatic profile switching not working on Wayland
+
+**Status**: ✅ MACROS FIXED | ⚠️ WINDOW TRACKING IN PROGRESS
+
+## Summary of Changes
+
+1. ✅ **Macros working** - All G-key macros now use uinput and work on Wayland
+2. ✅ **X11 code removed** - Simplified to Wayland-only, removed all X11 dependencies
+3. ⚠️ **Window tracking** - In progress, GNOME Shell Eval is disabled in GNOME 49
+
+## Current Session (Session 3 - 2025-12-12)
+
+### Issue: Automatic Profile Switching Not Working
+
+**Problem**: GNOME Shell 49 has disabled the `Eval` D-Bus interface for security reasons, which breaks window tracking.
+
+**Solutions Implemented**:
+
+1. **Multiple fallback methods** in `_check_active_application_with_wayland()`:
+   - Method 1: Read from state file `~/.cache/gnome15/active_window`
+   - Method 2: Try GNOME Shell Eval (for older GNOME versions)
+   - Method 3: Try custom D-Bus service (if extension installed)
+
+2. **Helper script created**: `gnome15-window-tracker.py`
+   - Monitors active window and writes to state file
+   - Can be run in background or as systemd service
+   - **Status**: Script created but needs GNOME Shell extension for actual window detection
+
+3. **Removed X11 code**:
+   - Removed `send_string()` (X11 version)
+   - Removed `send_simple_macro()` (X11 version)
+   - Removed `init_xtest()`, `get_x_display()`
+   - Removed Wnck window tracking code
+   - Simplified MacroHandler to Wayland-only
+
+### What's Needed Next
+
+**Option 1: Manual profile selection** (works now)
+- Users can manually select profiles in g15-config
+- Macros work perfectly
+
+**Option 2: Install/Update GNOME Shell Extension** (recommended)
+- Update `/usr/local/share/gnome-shell/extensions/gnome15-shell-extension@gnome15.org/`
+- Add window tracking D-Bus service to extension
+- Extension should expose `org.gnome15.WindowTracker` D-Bus interface
+
+**Option 3: Use systemd service** (fallback)
+- Create systemd user service for `gnome15-window-tracker.py`
+- Needs alternative window detection method (no Eval available)
+
+**Date**: 2025-12-12  
 **Issue**: G-keys opening remote desktop connection instead of executing macros on Wayland
 
 **Status**: ✅ FIX IMPLEMENTED - Testing Required
@@ -79,6 +130,13 @@ When a G-key macro was triggered, the code was calling `get_input_focus()` to de
 ✅ Service is running and ready for testing
 
 ### Testing Instructions
+
+**IMPORTANT: Service has been restarted with new mappings loaded! ✅**
+
+The keysym mapping changes are already applied because:
+- When running from source (via `./debug.sh`), it uses `data/ukeys/keysym-to-uinput` directly
+- The service was restarted after adding Super_L/Super_R mappings
+- Verified: `Super_L=KEY_LEFTMETA` is now loaded in memory
 
 **Test the G6 key (Language Change macro):**
 1. Make sure you have a text editor or other application open

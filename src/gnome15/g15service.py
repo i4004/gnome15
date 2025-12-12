@@ -151,11 +151,6 @@ class MacroHandler(object):
     def __init__(self):        
         self.buffered_executions = []
         self.cancelled = False
-        self.use_x_test = None
-        self.x_test_available = None
-        self.window = None
-        self.is_wayland = os.environ.get('XDG_SESSION_TYPE', '').lower() == 'wayland' or \
-                         os.environ.get('WAYLAND_DISPLAY') is not None
         
     def cancel(self):
         """
@@ -183,153 +178,6 @@ class MacroHandler(object):
         """              
         g15scheduler.queue(MACRO_HANDLER_QUEUE, "HandleMacro", 0, self._do_handle, macro)
         
-    def get_x_display(self):
-        self.init_xtest()
-        return self.local_dpy
-    
-    def init_xtest(self):
-        """
-        Initialise XTEST if it is available.
-        """
-        if self.x_test_available == None:
-            logger.info("Initialising macro output system")
-            
-            # Load Python Virtkey if it is available
-
-            # Use python-virtkey for preference
-            
-            self.virtual_keyboard = None
-            try:
-                import virtkey
-                self.virtual_keyboard = virtkey.virtkey()
-                self.x_test_available = False
-            except Exception as e:
-                logger.warning("No python-virtkey, macros may be weird. Trying XTest", exc_info = e)
-    
-                # Determine whether to use XTest for sending key events to X
-                self.x_test_available  = True
-                try :
-                    import Xlib.ext.xtest
-                except ImportError as e:
-                    logger.warning("No XTest, falling back to raw X11 events", exc_info = e)
-                    self.x_test_available = False
-                     
-                self.local_dpy = Xlib.display.Display()
-                
-                if self.x_test_available  and not self.local_dpy.query_extension("XTEST") :
-                    logger.warning("Found XTEST module, but the X extension could not be found")
-                    self.x_test_available = False
-        
-    def send_string(self, ch, press):
-        """
-        Sends a string (character) to the X server as if it was typed. 
-        Depending on the configuration virtkey, XTEST or raw events may be used
-        
-        Keyword arguments:
-        ch        --    character to send
-        press     --    boolean indicating if this is a PRESS or RELEASE
-        """
-        logger.debug("Sending string %s", ch)
-            
-        if self.virtual_keyboard is not None:
-            keysym = self._get_keysym(ch)
-            if press:
-                logger.debug("Sending keychar %s press = %s, keysym = %d (%x)",
-                             ch,
-                             press,
-                             keysym,
-                             keysym)
-                self.virtual_keyboard.press_keysym(keysym)
-            else:
-                self.virtual_keyboard.release_keysym(self._get_keysym(ch))
-        else:
-            keycode, shift_mask = self._char_to_keycodes(ch)
-            logger.debug("Sending keychar %s keycode %d, press = %s, shift = %d",
-                         ch,
-                         int(keycode),
-                         str(press),
-                         shift_mask)
-            if (self.x_test_available and self.use_x_test) :
-                if press:
-                    if shift_mask != 0 :
-                        Xlib.ext.xtest.fake_input(self.local_dpy, Xlib.X.KeyPress, 62)
-                    Xlib.ext.xtest.fake_input(self.local_dpy, Xlib.X.KeyPress, keycode)
-                else:
-                    Xlib.ext.xtest.fake_input(self.local_dpy, Xlib.X.KeyRelease, keycode)
-                    if shift_mask != 0 :
-                        Xlib.ext.xtest.fake_input(self.local_dpy, Xlib.X.KeyRelease, 62)
-            else :
-                if press:
-                    event = Xlib.protocol.event.KeyPress(
-                                                             time=int(time.time()),
-                                                             root=self.local_dpy.screen().root,
-                                                             window=self.window,
-                                                             same_screen=0, child=Xlib.X.NONE,
-                                                             root_x=0, root_y=0, event_x=0, event_y=0,
-                                                             state=shift_mask,
-                                                             detail=keycode
-                                                             )
-                    self.window.send_event(event, propagate=True)
-                else:
-                    event = Xlib.protocol.event.KeyRelease(
-                                                               time=int(time.time()),
-                                                               root=self.local_dpy.screen().root,
-                                                               window=self.window,
-                                                               same_screen=0, child=Xlib.X.NONE,
-                                                               root_x=0, root_y=0, event_x=0, event_y=0,
-                                                               state=shift_mask,
-                                                               detail=keycode
-                        )
-                    self.window.send_event(event, propagate=True)                    
-                self.local_dpy.sync()
-        
-    def send_simple_macro(self, macro):
-        logger.debug("Simple macro '%s'", macro.macro)
-        esc = False
-        i = 0
-    
-        press_delay = 0.0 if not macro.profile.fixed_delays else ( float(macro.profile.press_delay) / 1000.0 )
-        release_delay = 0.0 if not macro.profile.fixed_delays else ( float(macro.profile.release_delay) / 1000.0 )
-                        
-        for c in macro.macro:
-            if self.cancelled:
-                logger.warning("Macro cancelled.")
-                break
-            if c == '\\' and not esc:
-                esc = True
-            else:                     
-                if esc and c == 'p':
-                    time.sleep(release_delay + press_delay)
-                else:                          
-                    if i > 0:
-                        logger.debug("Release delay of %f", release_delay)
-                        time.sleep(release_delay)
-                        
-                    if esc and c == 't':
-                        c = '\t'                  
-                    elif esc and c == 'r':
-                        c = '\r'              
-                    elif esc and c == 'n':
-                        c = '\r'    
-                    elif esc and c == 'b':
-                        c = '\b' 
-                    elif esc and c == 'e':
-                        c = '\e'
-                    elif esc and c == '\\':
-                        c = '\\'
-                        
-                    if c in special_X_keysyms:
-                        c = special_X_keysyms[c]
-                        
-                    self.send_string(c, True)
-                    time.sleep(press_delay)
-                    logger.debug("Press delay of %f", press_delay)
-                    self.send_string(c, False)
-                    
-                    i += 1
-                     
-                esc = False
-
     def send_simple_macro_uinput(self, macro):
         """
         Send a simple macro using uinput (for Wayland)
@@ -649,17 +497,11 @@ class MacroScriptExecution(object):
                 elif op == "press":
                     if self.down > 0:
                         self.handler.release_delay(self.macro)
-                    if self.handler.is_wayland:
-                        self.handler.send_string_uinput(val, True)
-                    else:
-                        self.handler.send_string(val, True)
+                    self.handler.send_string_uinput(val, True)
                     self.down += 1
                     self.handler.press_delay(self.macro)
                 elif op == "release":
-                    if self.handler.is_wayland:
-                        self.handler.send_string_uinput(val, False)
-                    else:
-                        self.handler.send_string(val, False)
+                    self.handler.send_string_uinput(val, False)
                     self.down -= 1
                 elif op == "upress":
                     if len(split) < 3:                        
@@ -917,26 +759,63 @@ class G15Service(g15desktop.G15AbstractService):
                os.environ.get('WAYLAND_DISPLAY') is not None
     
     def _check_active_application_with_wayland(self, event=None):
-        """Check active application under Wayland using GNOME Shell D-Bus interface"""
-        try:
-            import dbus
-            session_bus = dbus.SessionBus()
-            # Try GNOME Shell's window tracker
-            shell = session_bus.get_object('org.gnome.Shell', '/org/gnome/Shell')
-            shell_iface = dbus.Interface(shell, 'org.gnome.Shell')
-            
-            # Get list of windows
-            result = shell_iface.Eval('global.display.focus_window ? global.display.focus_window.get_wm_class() : ""')
-            if result[0]:  # success
-                active_application_name = result[1].strip('"')
-                if active_application_name and active_application_name != self.active_application_name:
-                    self.active_application_name = active_application_name
-                    self.active_window_title = active_application_name
-                    logger.info("Active application is now %s", self.active_application_name)
-                    for screen in self.screens:
-                        screen.set_active_application_name(active_application_name)
-        except Exception as e:
-            logger.debug("Failed to get active window via GNOME Shell D-Bus", exc_info = e)
+        """Check active application under Wayland using various methods"""
+        active_app = None
+        
+        # Method 1: Try to read from a state file (can be updated by external script)
+        state_file = os.path.expanduser("~/.cache/gnome15/active_window")
+        if os.path.exists(state_file):
+            try:
+                with open(state_file, 'r') as f:
+                    lines = f.readlines()
+                    if len(lines) >= 2:
+                        wm_class = lines[0].strip()
+                        title = lines[1].strip() if len(lines) > 1 else wm_class
+                        if wm_class:
+                            active_app = (wm_class, title)
+            except Exception as e:
+                logger.debug("Could not read active window state file", exc_info=e)
+        
+        # Method 2: Try GNOME Shell Eval (might be disabled in newer versions)
+        if not active_app:
+            try:
+                import dbus
+                session_bus = dbus.SessionBus()
+                shell = session_bus.get_object('org.gnome.Shell', '/org/gnome/Shell')
+                shell_iface = dbus.Interface(shell, 'org.gnome.Shell')
+                
+                # Try to get active window
+                result = shell_iface.Eval('global.display.focus_window ? global.display.focus_window.get_wm_class() + "|" + global.display.focus_window.get_title() : ""')
+                if result[0] and result[1]:  # success
+                    window_info = result[1].strip('"')
+                    if '|' in window_info:
+                        parts = window_info.split('|', 1)
+                        active_app = (parts[0], parts[1])
+            except Exception as e:
+                logger.debug("GNOME Shell Eval not available", exc_info = e)
+        
+        # Method 3: Try custom D-Bus service (if gnome15-window-tracker extension is installed)
+        if not active_app:
+            try:
+                import dbus
+                session_bus = dbus.SessionBus()
+                tracker = session_bus.get_object('org.gnome15.WindowTracker', '/org/gnome15/WindowTracker')
+                tracker_iface = dbus.Interface(tracker, 'org.gnome15.WindowTracker')
+                wm_class, title = tracker_iface.GetActiveWindow()
+                if wm_class:
+                    active_app = (wm_class, title)
+            except Exception as e:
+                logger.debug("Gnome15 Window Tracker extension not available", exc_info = e)
+        
+        # Update active application if found
+        if active_app:
+            wm_class, title = active_app
+            if wm_class and wm_class != self.active_application_name:
+                self.active_application_name = wm_class
+                self.active_window_title = title
+                logger.info("Active application is now %s (title: %s)", wm_class, title)
+                for screen in self.screens:
+                    screen.set_active_application_name(wm_class)
             
         GObject.timeout_add(500, self._check_active_application_with_wayland)
     
@@ -1239,35 +1118,17 @@ class G15Service(g15desktop.G15AbstractService):
             g15scheduler.queue(SERVICE_QUEUE, "activeSessionChanged", 0.0, self._check_state_of_all_devices)
         
     def _configure_window_monitoring(self):
-        # code does not work with BAMF anymore. So, it is commented now.
-#        logger.info("Attempting to set up BAMF")
-#        try :
-#            bamf_object = self.session_bus.get_object('org.ayatana.bamf', '/org/ayatana/bamf/matcher')     
-#            self.bamf_matcher = dbus.Interface(bamf_object, 'org.ayatana.bamf.matcher')
-#            self.session_bus.add_signal_receiver(self._active_window_changed, dbus_interface = 'org.ayatana.bamf.matcher', signal_name="ActiveWindowChanged")
-#            active_window = self.bamf_matcher.ActiveWindow() 
-#            logger.info("Will be using BAMF for window matching")
-#            if active_window:
-#                self._active_window_changed("", active_window)
-#        except Exception as e:
-#            logger.info("BAMF not available, falling back to polling WNCK.")
-#            logger.debug("BAMF attempt below :", exc_info = e)
-        # Check if running under Wayland
-        if self._is_wayland():
-            logger.info("Wayland detected, using GNOME Shell D-Bus for window tracking")
-            try:
-                self._check_active_application_with_wayland()
-            except Exception as e:
-                logger.warning("Failed to initialize Wayland window tracking", exc_info = e)
-        else:
-            # X11 - use Wnck
-            try :                
-                import gi
-                gi.require_version('Wnck','3.0')
-                from gi.repository import Wnck
-                self._check_active_application_with_wnck()
-            except Exception as e:
-                logger.warning("Python Wnck not available, no automatic profile switching", exc_info = e)
+        # Wayland-only - use GNOME Shell D-Bus for window tracking
+        logger.info("Setting up Wayland window tracking")
+        
+        # Create cache directory for state file
+        cache_dir = os.path.expanduser("~/.cache/gnome15")
+        os.makedirs(cache_dir, exist_ok=True)
+        
+        try:
+            self._check_active_application_with_wayland()
+        except Exception as e:
+            logger.warning("Failed to initialize Wayland window tracking", exc_info = e)
            
     def _add_screen(self, device):
         try:
