@@ -154,6 +154,8 @@ class MacroHandler(object):
         self.use_x_test = None
         self.x_test_available = None
         self.window = None
+        self.is_wayland = os.environ.get('XDG_SESSION_TYPE', '').lower() == 'wayland' or \
+                         os.environ.get('WAYLAND_DISPLAY') is not None
         
     def cancel(self):
         """
@@ -328,6 +330,166 @@ class MacroHandler(object):
                      
                 esc = False
 
+    def send_simple_macro_uinput(self, macro):
+        """
+        Send a simple macro using uinput (for Wayland)
+        """
+        logger.debug("Simple macro (uinput) '%s'", macro.macro)
+        esc = False
+        i = 0
+    
+        press_delay = 0.0 if not macro.profile.fixed_delays else ( float(macro.profile.press_delay) / 1000.0 )
+        release_delay = 0.0 if not macro.profile.fixed_delays else ( float(macro.profile.release_delay) / 1000.0 )
+                        
+        for c in macro.macro:
+            if self.cancelled:
+                logger.warning("Macro cancelled.")
+                break
+            if c == '\\' and not esc:
+                esc = True
+            else:                     
+                if esc and c == 'p':
+                    time.sleep(release_delay + press_delay)
+                else:                          
+                    if i > 0:
+                        logger.debug("Release delay of %f", release_delay)
+                        time.sleep(release_delay)
+                        
+                    if esc and c == 't':
+                        c = '\t'                  
+                    elif esc and c == 'r':
+                        c = '\r'              
+                    elif esc and c == 'n':
+                        c = '\r'    
+                    elif esc and c == 'b':
+                        c = '\b' 
+                    elif esc and c == 'e':
+                        c = '\e'
+                    elif esc and c == '\\':
+                        c = '\\'
+                        
+                    if c in special_X_keysyms:
+                        c = special_X_keysyms[c]
+                        
+                    self._send_char_uinput(c, True)
+                    time.sleep(press_delay)
+                    logger.debug("Press delay of %f", press_delay)
+                    self._send_char_uinput(c, False)
+                    
+                    i += 1
+                     
+                esc = False
+
+    def _send_char_uinput(self, ch, press):
+        """
+        Send a character via uinput
+        
+        Keyword arguments:
+        ch        --    character to send
+        press     --    boolean indicating if this is a PRESS or RELEASE
+        """
+        logger.debug("Sending char via uinput: %s, press=%s", ch, press)
+        
+        # Get keysym name for the character
+        keysym_name = ch
+        if ch in special_X_keysyms:
+            keysym_name = special_X_keysyms[ch]
+        
+        # Try to get uinput mapping
+        uinput_code = g15uinput.get_keysym_to_uinput_mapping(keysym_name)
+        
+        # Handle uppercase letters (not in mapping file, need to synthesize shift+letter)
+        if uinput_code is None and len(ch) == 1 and ch.isupper():
+            uinput_code = "KEY_LEFTSHIFT,KEY_" + ch.upper()
+            logger.debug("Synthesized shift mapping for uppercase: %s", uinput_code)
+        
+        # Handle special characters that need shift
+        elif uinput_code is None and ch in special_X_keysyms:
+            shifted_chars = {
+                'exclam': 'KEY_LEFTSHIFT,KEY_1',        # !
+                'at': 'KEY_LEFTSHIFT,KEY_2',            # @
+                'numbersign': 'KEY_LEFTSHIFT,KEY_3',    # #
+                'percent': 'KEY_LEFTSHIFT,KEY_5',       # %
+                'asciicircum': 'KEY_LEFTSHIFT,KEY_6',   # ^
+                'ampersand': 'KEY_LEFTSHIFT,KEY_7',     # &
+                'asterisk': 'KEY_LEFTSHIFT,KEY_8',      # *
+                'parenleft': 'KEY_LEFTSHIFT,KEY_9',     # (
+                'parenright': 'KEY_LEFTSHIFT,KEY_0',    # )
+                'underscore': 'KEY_LEFTSHIFT,KEY_MINUS', # _
+                'plus': 'KEY_LEFTSHIFT,KEY_EQUAL',      # +
+                'braceleft': 'KEY_LEFTSHIFT,KEY_LEFTBRACE',  # {
+                'braceright': 'KEY_LEFTSHIFT,KEY_RIGHTBRACE', # }
+                'bar': 'KEY_LEFTSHIFT,KEY_BACKSLASH',   # |
+                'colon': 'KEY_LEFTSHIFT,KEY_SEMICOLON', # :
+                'quotedbl': 'KEY_LEFTSHIFT,KEY_APOSTROPHE', # "
+                'less': 'KEY_LEFTSHIFT,KEY_COMMA',      # <
+                'greater': 'KEY_LEFTSHIFT,KEY_DOT',     # >
+                'question': 'KEY_LEFTSHIFT,KEY_SLASH',  # ?
+                'asciitilde': 'KEY_LEFTSHIFT,KEY_GRAVE' # ~
+            }
+            if keysym_name in shifted_chars:
+                uinput_code = shifted_chars[keysym_name]
+                logger.debug("Using shifted char mapping for %s: %s", keysym_name, uinput_code)
+        
+        if uinput_code:
+            # Handle multiple keys (e.g., shifted characters)
+            keys = uinput_code.split(',')
+            
+            if press:
+                # Press all keys in sequence
+                for key in keys:
+                    key = key.strip()
+                    if key in g15uinput.capabilities:
+                        g15uinput.emit(g15uinput.KEYBOARD, g15uinput.capabilities[key], 1, True)
+                    else:
+                        logger.warning("Unknown uinput key: %s", key)
+            else:
+                # Release all keys in reverse order
+                for key in reversed(keys):
+                    key = key.strip()
+                    if key in g15uinput.capabilities:
+                        g15uinput.emit(g15uinput.KEYBOARD, g15uinput.capabilities[key], 0, True)
+                    else:
+                        logger.warning("Unknown uinput key: %s", key)
+        else:
+            logger.warning("No uinput mapping found for character: %s (keysym: %s)", ch, keysym_name)
+
+    def send_string_uinput(self, keysym_name, press):
+        """
+        Send a keysym via uinput (for script macros on Wayland)
+        
+        Keyword arguments:
+        keysym_name   --    X11 keysym name (e.g., "Super_L", "Control_L", "space")
+        press         --    boolean indicating if this is a PRESS or RELEASE
+        """
+        logger.debug("Sending keysym via uinput: %s, press=%s", keysym_name, press)
+        
+        # Try to get uinput mapping
+        uinput_code = g15uinput.get_keysym_to_uinput_mapping(keysym_name)
+        
+        if uinput_code:
+            # Handle multiple keys (e.g., shifted characters)
+            keys = uinput_code.split(',')
+            
+            if press:
+                # Press all keys in sequence
+                for key in keys:
+                    key = key.strip()
+                    if key in g15uinput.capabilities:
+                        g15uinput.emit(g15uinput.KEYBOARD, g15uinput.capabilities[key], 1, True)
+                    else:
+                        logger.warning("Unknown uinput key: %s", key)
+            else:
+                # Release all keys in reverse order
+                for key in reversed(keys):
+                    key = key.strip()
+                    if key in g15uinput.capabilities:
+                        g15uinput.emit(g15uinput.KEYBOARD, g15uinput.capabilities[key], 0, True)
+                    else:
+                        logger.warning("Unknown uinput key: %s", key)
+        else:
+            logger.warning("No uinput mapping found for keysym: %s", keysym_name)
+
     def press_delay(self, macro):
         delay = 0.0 if not macro.profile.fixed_delays else ( float(macro.profile.press_delay) / 1000.0 )
         logger.debug("Press delay of %f", delay)
@@ -406,17 +568,14 @@ class MacroHandler(object):
         
     def _do_handle(self, macro):
         
-        # Get the latest focused window if not using XTest
+        # Wayland only - no need for X11 window focus
         self.cancelled = False
-        self.init_xtest()
-        if self.virtual_keyboard is None and ( not self.use_x_test or not self.x_test_available ):
-            self.window = self.local_dpy.get_input_focus()._data["focus"]; 
         
         if macro.type == g15profile.MACRO_COMMAND:
             logger.warning("Running external command '%s'", macro.macro)
             os.system(macro.macro)
         elif macro.type == g15profile.MACRO_SIMPLE:
-            self.send_simple_macro(macro)
+            self.send_simple_macro_uinput(macro)
         else:
             executor = MacroScriptExecution(macro, self)
             wait_for_state = executor.execute()
@@ -490,11 +649,17 @@ class MacroScriptExecution(object):
                 elif op == "press":
                     if self.down > 0:
                         self.handler.release_delay(self.macro)
-                    self.handler.send_string(val, True)
+                    if self.handler.is_wayland:
+                        self.handler.send_string_uinput(val, True)
+                    else:
+                        self.handler.send_string(val, True)
                     self.down += 1
                     self.handler.press_delay(self.macro)
                 elif op == "release":
-                    self.handler.send_string(val, False)
+                    if self.handler.is_wayland:
+                        self.handler.send_string_uinput(val, False)
+                    else:
+                        self.handler.send_string(val, False)
                     self.down -= 1
                 elif op == "upress":
                     if len(split) < 3:                        
