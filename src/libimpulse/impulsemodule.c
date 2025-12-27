@@ -68,12 +68,20 @@ static PyMethodDef ImpulseMethods[ ] = {
 	{ NULL }		/* Sentinel */
 };
 
-PyMODINIT_FUNC initimpulse ( void ) {
+static struct PyModuleDef impulsemodule = {
+	PyModuleDef_HEAD_INIT,
+	"impulse",
+	NULL,
+	-1,
+	ImpulseMethods
+};
+
+PyMODINIT_FUNC PyInit_impulse ( void ) {
 	PyObject *m;
 
-	m = Py_InitModule( "impulse", ImpulseMethods );
+	m = PyModule_Create( &impulsemodule );
 	if (m == NULL)
-		return;
+		return NULL;
 
 	ImpulseError = PyErr_NewException( "impulse.error", NULL, NULL );
 	Py_INCREF( ImpulseError );
@@ -83,6 +91,6 @@ PyMODINIT_FUNC initimpulse ( void ) {
 
 	im_start( );
 
-	return;
+	return m;
 }
 

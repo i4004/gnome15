@@ -19,8 +19,8 @@ LT_INIT()
 AC_PROG_CC
 
 dnl Python
-AM_PATH_PYTHON([3.11])
-AX_PYTHON_DEVEL([3.11])
+AM_PATH_PYTHON([3.13])
+AX_PYTHON_DEVEL([3.13])
 
 dnl versions of packages we require ...
 m4_define(pygobject_required_version,3.2.0)
