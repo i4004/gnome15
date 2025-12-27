@@ -466,11 +466,8 @@ class G15Config:
 #            bamf_object = self.session_bus.get_object('org.ayatana.bamf', '/org/ayatana/bamf/matcher')     
 #            self.bamf_matcher = dbus.Interface(bamf_object, 'org.ayatana.bamf.matcher')
 #        except Exception as e:
-#            logger.warning("BAMF not available, falling back to WNCK", exc_info = e)
-        self.bamf_matcher = None            
-        gi.require_version('Wnck', '3.0')
-        from gi.repository import Wnck
-        self.screen = Wnck.Screen.get_default()
+#            logger.warning("BAMF not available", exc_info = e)
+        self.bamf_matcher = None
         
         # Show infobar component to start desktop service if it is not running
         self.infobar = Gtk.InfoBar()    
@@ -1019,31 +1016,6 @@ class G15Config:
         else:
             if widget.get_text() != self.selected_profile.window_name: 
                 self.selected_profile.window_name = widget.get_text()
-                if self.bamf_matcher != None:
-                    for window in self.bamf_matcher.RunningApplications():
-                        app = self.session_bus.get_object("org.ayatana.bamf", window)
-                        view = dbus.Interface(app, 'org.ayatana.bamf.view')
-                        if view.Name() == self.selected_profile.window_name:
-                            icon = view.Icon()
-                            if icon != None:
-                                icon_path = g15icontools.get_icon_path(icon)
-                                if icon_path != None:
-                                    # We need to copy the icon as it may be temporary
-                                    copy_path = os.path.join(icons_dir, os.path.basename(icon_path))
-                                    shutil.copy(icon_path, copy_path)
-                                    self.selected_profile.icon = copy_path
-                                    self._set_image(self.profile_icon, copy_path)
-                else:                    
-                    import wnck           
-                    for window in Wnck.Screen.get_default().get_windows():
-                        if window.get_name() == self.selected_profile.window_name:
-                            icon = window.get_icon()
-                            if icon != None:
-                                filename = os.path.join(icons_dir,"%d.png" % self.selected_profile.id)
-                                icon.save(filename, "png")
-                                self.selected_profile.icon = filename    
-                                self._set_image(self.profile_icon, filename)
-                            
                 self._save_profile(self.selected_profile)
                 
     def _driver_configuration_changed(self, *args):
@@ -1822,27 +1794,6 @@ class G15Config:
         self.window_model.clear()  
         window_name = self.window_name.get_text()
         i = 0
-        if self.bamf_matcher != None:            
-            for window in self.bamf_matcher.RunningApplications():
-                app = self.session_bus.get_object("org.ayatana.bamf", window)
-                view = dbus.Interface(app, 'org.ayatana.bamf.view')
-                vn = view.Name()
-                self.window_model.append([vn, window])                
-                if window_name != None and vn == window_name:
-                    self.window_combo.set_active(i)
-                i += 1
-        else:
-            apps = {}
-            for window in self.screen.get_windows():
-                if not window.is_skip_pager():
-                    app = window.get_application()                
-                    if app and not app.get_name() in apps:
-                        apps[app.get_name()] = app
-            for app in apps:
-                self.window_model.append([app, app])                
-                if window_name != None and app == window_name:
-                    self.window_combo.set_active(i)
-                i += 1
         
     def _add_controls(self):
         
